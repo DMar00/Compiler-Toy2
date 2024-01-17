@@ -1,0 +1,43 @@
+var n1:integer;\
+var n2, n3:string;\
+var n4 ^= 4; n5:real; n6^=true;\
+
+func ciao(par1:integer, par2:integer) -> integer, real :
+
+endfunc
+
+%miao miao miao%
+
+proc ciao():
+%miao
+    miao%
+    var n2, n3:string;\
+    n1, n2 ^= n5, 3 ;
+endproc
+
+proc ciao():
+    ciccio1();
+    ciccio(n6);
+    ciccio(n6, @ nRef);
+    if 3 then
+        n8 ^= 5+7;
+    elseif 4 then
+        n9 ^= 7;
+    else
+        n7 ^= 4;
+    endif;
+endproc
+
+var n1:integer;\
+
+func ciccio(par1:real) -> integer :
+    n1 ^= -5 ;
+    return n1, 3;
+    while true
+    do
+        pippo^=pluto;
+    endwhile;
+    ciccio();
+    ciccio(n1);
+    -->"paperina" $(a) "minnie";
+endfunc

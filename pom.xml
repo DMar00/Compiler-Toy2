@@ -14,4 +14,83 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.github.vbmacher</groupId>
+            <artifactId>java-cup-runtime</artifactId>
+            <version>11b-20160615-3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.abrarsyed.jastyle</groupId>
+            <artifactId>jAstyle</artifactId>
+            <version>1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>de.jflex</groupId>
+            <artifactId>maven-jflex-plugin</artifactId>
+            <version>1.4.3-r1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>
+            src
+        </sourceDirectory>
+
+        <plugins>
+            <plugin>
+                <groupId>de.jflex</groupId>
+                <artifactId>jflex-maven-plugin</artifactId>
+                <!--<version>1.8.2</version>-->
+                <version>1.9.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <lexDefinitions>
+                                <lexDefinition>srcjflexcup</lexDefinition>
+                                <!--<className>Lexer</className>
+                                <packageName>main.output_jflex</packageName>-->
+                            </lexDefinitions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--CUP-->
+            <plugin>
+                <groupId>com.github.vbmacher</groupId>
+                <artifactId>cup-maven-plugin</artifactId>
+                <version>11b-20160615-3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <cupDefinition>srcjflexcup</cupDefinition>
+                    <outputDirectory>src</outputDirectory>
+                    <symbolsName>Token</symbolsName>
+                    <className>Parser</className>
+                    <packageName>main.output_cup</packageName>
+                    <dumpGrammar>true</dumpGrammar>
+                    <dumpStates>true</dumpStates>
+                    <dumpTables>true</dumpTables>
+                    <expectedConflicts>0</expectedConflicts>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

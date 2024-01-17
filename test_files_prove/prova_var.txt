@@ -1,0 +1,3 @@
+proc miao():
+    var n, n1:integer ; s, s1: real;\
+endproc

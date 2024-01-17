@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><ProgramOp><ProcOp>(id, miao) <BodyOp><VarDeclOp><TypeOp>integer</TypeOp><Var>(id, n1)  (null)</Var><Var>(id, n)  (null)</Var></VarDeclOp><VarDeclOp><TypeOp>real</TypeOp><Var>(id, s1)  (null)</Var><Var>(id, s)  (null)</Var></VarDeclOp></BodyOp></ProcOp></ProgramOp>

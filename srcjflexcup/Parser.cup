@@ -1,0 +1,390 @@
+package main.output_cup;
+
+import java_cup.runtime.*;
+import main.syntaxtree.nodes.*;
+import main.syntaxtree.visitor.*;
+import main.syntaxtree.enums.*;
+import main.syntaxtree.nodes.expr.*;
+import main.syntaxtree.nodes.iter.*;
+import main.syntaxtree.nodes.expr.constNodes.*;
+import main.syntaxtree.nodes.expr.binExpr.*;
+import main.syntaxtree.nodes.stat.*;
+import java.util.LinkedList;
+import java.util.HashMap;
+
+/* terminals */
+terminal                REAL, INTEGER, STRING, BOOLEAN;
+terminal                REAL_CONST, INTEGER_CONST, STRING_CONST, TRUE, FALSE;
+terminal                PROCEDURE, ENDPROCEDURE, REF, RETURN;
+terminal                LPAR, RPAR;
+terminal                COLON, COMMA, SEMI;
+terminal                ASSIGN;
+terminal                VAR, ENDVAR;
+terminal                FUNCTION, ENDFUNCTION, TYPERETURN;
+terminal    String      ID;         //evito di fare cast a String ogni volta che incontro un id
+terminal                OUT;
+terminal                IF, ELSE, ELIF, THEN, ENDIF;
+terminal                WHILE, DO, ENDWHILE;
+terminal                PLUS, DIV, TIMES, MINUS, UMINUS;
+terminal                AND, OR, NOT;
+terminal                GT, GE, LT, LE, EQ, NE;
+terminal                DOLLARSIGN;
+terminal                WRITE, WRITERETURN, READ;
+
+/* non terminals */
+nonterminal     ProgramOp                       Program;
+nonterminal                                     Iter1, Iter2;
+
+nonterminal     ProcOp                          Procedure;
+
+nonterminal     Type                            Type;
+nonterminal     LinkedList<Type>                Types;
+
+nonterminal     ProcFunParamOp                  ProcParamId;
+nonterminal     LinkedList<ProcFunParamOp>      ProcParams, OtherProcParams, OtherFuncParams, FuncParams;
+
+nonterminal     BodyOp                          Body, Else;
+
+nonterminal     ConstNode                       Const;
+nonterminal     LinkedList<ConstNode>           Consts;
+
+nonterminal     LinkedList<Id>                  Ids;
+
+nonterminal     LinkedList<VarDeclOp>           Decls, VarDecl;
+
+nonterminal     FunDeclOp                       Function;
+
+nonterminal     LinkedList<Expr>                Exprs;
+nonterminal     Expr                            Expr;
+
+nonterminal     Stat                            Stat;
+
+nonterminal     LinkedList<ProcExpr>            ProcExprs;
+nonterminal     ProcCallOp                      ProcCall;
+nonterminal     LinkedList<ElifOp>              Elifs;
+nonterminal     ElifOp                          Elif;
+nonterminal     IfOp                            IfStat;
+nonterminal     WhileOp                         WhileStat;
+nonterminal     FunCallOp                       FunCall;
+nonterminal     LinkedList<Expr>                IOArgs;
+
+precedence left OR;
+precedence left AND;
+precedence left GT, GE, LT, LE, EQ, NE;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV;
+precedence right NOT;
+precedence left UMINUS;
+
+/* grammar */
+// questa produzione e le successive due sono state cambiate a causa di conflitto shift/reduce
+/*Program ::= Iter Procedure Iter
+  Iter ::= VarDecl Iter
+        | Function Iter
+        | Procedure Iter
+        | empty
+*/
+Program ::= Iter1:i1 Procedure:p Iter2:i2   {:LinkedList<IterOp> iterList = new LinkedList<IterOp>();
+                                              if(i1==null) i1 = new LinkedList<IterOp>();
+                                              iterList.addAll((LinkedList<IterOp>)i1);
+                                              iterList.add(p);
+                                              if(i2==null) i2 = new LinkedList<IterOp>();
+                                              iterList.addAll((LinkedList<IterOp>)i2);
+                                              RESULT = new ProgramOp(iterList);
+                                            :}
+;
+
+Iter1 ::= VarDecl:vds Iter1:i               {:  if(i == null) i = new LinkedList<VarDeclOp>();
+                                                ((LinkedList<VarDeclOp>)i).addAll(0, vds);
+                                                RESULT = i;
+                                            :}
+        |Function:fs Iter1:i                {: if(i == null) i = new LinkedList<FunDeclOp>();
+                                               ((LinkedList<FunDeclOp>)i).add(0, fs);
+                                               RESULT = i;
+                                            :}
+        |/* empty */                        {: RESULT = null; :}
+;
+
+Iter2 ::= VarDecl:vds Iter2:i               {:  if(i == null) i = new LinkedList<VarDeclOp>();
+                                                ((LinkedList<VarDeclOp>)i).addAll(0, vds);
+                                                RESULT = i;
+                                            :}
+        |Function:fs Iter2:i                {: if(i == null) i = new LinkedList<FunDeclOp>();
+                                               ((LinkedList<FunDeclOp>)i).add(0, fs);
+                                               RESULT = i;
+                                            :}
+        |Procedure:ps Iter2:i               {: if(i == null) i = new LinkedList<ProcOp>();
+                                               ((LinkedList<ProcOp>)i).add(0, ps);
+                                               RESULT = i;
+                                            :}
+        |/* empty */                        {:  RESULT = null; :}
+;
+
+
+
+/*********************************************************************************************/
+Procedure ::= PROCEDURE ID:id LPAR ProcParams:paramList RPAR COLON Body:bd ENDPROCEDURE    {:RESULT = new ProcOp(new Id(id), paramList, bd);:}
+;
+
+ProcParams::= ProcParamId:procId COLON Type:t OtherProcParams:otherPars {:procId.type = t;
+                                                                          if(otherPars==null) otherPars = new LinkedList<ProcFunParamOp>();
+                                                                          otherPars.add(0, procId);
+                                                                          RESULT = otherPars;
+                                                                        :}
+             |/* empty */                                               {:RESULT = null;:}
+;
+
+OtherProcParams ::= COMMA ProcParamId:procId COLON Type:t OtherProcParams:otherPars {:procId.type = t;
+                                                                                      if(otherPars == null) otherPars = new LinkedList<ProcFunParamOp>();
+                                                                                      otherPars.add(0, procId);
+                                                                                      RESULT = otherPars;
+                                                                                    :}
+	                |/* empty */                                                    {:RESULT = null;:}
+;
+
+ProcParamId ::= ID: id      {:RESULT = new ProcFunParamOp(Mode.INOUT, new Id(id), null);:}
+	            |OUT ID:id  {:RESULT = new ProcFunParamOp(Mode.OUT, new Id(id), null);:}
+;
+
+Type ::= REAL       {: RESULT = Type.REAL; :}
+        |INTEGER    {: RESULT = Type.INTEGER; :}
+        |STRING     {: RESULT = Type.STRING; :}
+        |BOOLEAN    {: RESULT = Type.BOOLEAN; :}
+;
+
+
+/*********************************************************************************************/
+VarDecl ::= VAR Decls:varList        {:RESULT = varList;:}
+;
+
+Decls ::= Ids:idList COLON Type:t SEMI Decls:varList            {:  HashMap<Id, ConstNode> idHash = new HashMap<Id,ConstNode>();
+                                                                    for(Id id: idList){
+                                                                        idHash.put(id, null);
+                                                                    }
+                                                                    varList.add(0, new VarDeclOp(t, idHash));
+                                                                    RESULT = varList;
+                                                                :}
+	    | Ids:idList ASSIGN Consts:constList SEMI Decls:varList {:  HashMap<Id, ConstNode> idHash = new HashMap<Id,ConstNode>();
+                                                                    if(idList.size()!=constList.size())
+                                                                        throw new Exception("Mismatch between the number of IDs and constants detected.");
+                                                                    int i = 0;
+                                                                    for(Id id: idList){
+                                                                        idHash.put(id, constList.get(i));
+                                                                        i++;
+                                                                    }
+                                                                    varList.add(0, new VarDeclOp(null, idHash));
+                                                                    RESULT = varList;
+	                                                            :}
+	    | Ids:idList COLON Type:t SEMI ENDVAR                   {:  LinkedList<VarDeclOp> varList = new LinkedList<VarDeclOp>();
+	                                                                HashMap<Id, ConstNode> idHash = new HashMap<Id,ConstNode>();
+	                                                                for(Id id: idList){
+	                                                                    idHash.put(id, null);
+	                                                                }
+	                                                                varList.add(new VarDeclOp(t, idHash));
+	                                                                RESULT = varList;
+	                                                            :}
+	    | Ids:idList ASSIGN Consts:constList SEMI ENDVAR        {:  LinkedList<VarDeclOp> varList = new LinkedList<VarDeclOp>();
+                                                                    HashMap<Id, ConstNode> idHash = new HashMap<Id,ConstNode>();
+                                                                    if(idList.size()!=constList.size())
+                                                                        throw new Exception("Mismatch between the number of IDs and constants detected.");
+                                                                    int i = 0;
+                                                                    for(Id id: idList){
+                                                                        idHash.put(id, constList.get(i));
+                                                                        i++;
+                                                                    }
+                                                                    varList.add(new VarDeclOp(null, idHash));
+                                                                    RESULT = varList;
+	                                                            :}
+;
+
+Ids ::= ID:id COMMA Ids:ids     {:  ids.add(0, new Id(id));
+                                    RESULT = ids;
+                                :}
+       |ID:id                   {:  LinkedList<Id> ids = new LinkedList<Id>();
+                                    ids.add(0, new Id(id));
+                                    RESULT = ids;
+                                :}
+;
+
+Consts ::= Const:ct                     {:  LinkedList<ConstNode> list = new LinkedList<ConstNode>();
+                                            list.add(0,(ConstNode)ct);
+                                            RESULT = list;
+                                        :}
+          |Const:ct COMMA Consts:cts    {:  cts.add(0,ct);
+                                            RESULT = cts;
+                                        :}
+;
+
+Const ::= REAL_CONST:ct         {: RESULT = new RealConstNode(Float.valueOf((String)ct)); :}
+         |INTEGER_CONST:ct      {: RESULT = new IntConstNode(Integer.parseInt((String)ct)); :}
+         |STRING_CONST:ct       {: RESULT = new StringConstNode((String) ct); :}
+         |TRUE                  {: RESULT = new BoolConstNode(true); :}
+         |FALSE                 {: RESULT = new BoolConstNode(false); :}
+;
+
+
+
+/*********************************************************************************************/
+/*func ciao(par1:integer, par2:integer) -> integer, real :
+    var a ^= par1+par2;\
+    var b ^= par1/par2;\
+    return a, b;
+endfunc*/
+Function  ::= FUNCTION ID:funcName LPAR FuncParams:paramList RPAR TYPERETURN Types:typeList COLON Body:b ENDFUNCTION  {: RESULT = new FunDeclOp(new Id(funcName), paramList, typeList, b);
+                                                                                                                      :}
+;
+
+FuncParams ::= ID:id COLON Type:type OtherFuncParams:otherParams        {:if(otherParams == null) otherParams = new LinkedList<ProcFunParamOp>();
+                                                                          ProcFunParamOp p = new ProcFunParamOp(Mode.IN, new Id(id), type);
+                                                                          otherParams.add(0, p);
+                                                                          RESULT = otherParams;:}
+               |/* empty */                                             {:RESULT = null;:}
+;
+
+OtherFuncParams ::= COMMA ID:id COLON Type:type OtherFuncParams:otherParams      {: if(otherParams == null) otherParams = new LinkedList<ProcFunParamOp>();
+                                                                                    ProcFunParamOp p = new ProcFunParamOp(Mode.IN, new Id(id), type);
+                                                                                    otherParams.add(0, p);
+                                                                                    RESULT = otherParams;
+                                                                                  :}
+                |/* empty */                                                      {:RESULT = null;:}
+;
+
+
+Types ::= Type:type COMMA Types:typeList         {: typeList.add(0, type);
+                                                    RESULT = typeList;
+                                                 :}
+	     |Type:type                              {:LinkedList<Type> types = new LinkedList<>();
+	                                                types.add(0, type);
+	                                                RESULT = types;
+                                                  :}
+;
+
+
+/*********************************************************************************************/
+Body ::= VarDecl:varList Body:b     {:  b.varDeclOpList.addAll(0, varList);
+                                        RESULT = b;
+                                    :}
+        |Stat:st Body:b             {:  b.statList.add(0, st);
+                                        RESULT = b;
+                                    :}
+        |/* empty */                {:  RESULT = new BodyOp();:}
+;
+
+//n1, n2 ^= n5, 3 ;
+
+Stat ::= Ids:idList ASSIGN Exprs:exprList SEMI  {:  if(idList.size()!=exprList.size())
+                                                        throw new Exception("Mismatch between the number of IDs and exprs detected.");
+                                                    RESULT = new AssignOp(idList, exprList);
+                                                :}
+	    |ProcCall:procCall  SEMI                {: RESULT = procCall;:}
+	    |RETURN Exprs:exprList SEMI             {: RESULT = new ReturnOp(exprList);:}
+	    |WRITE IOArgs:ioArgsList SEMI           {:RESULT = new IOArgsOp(IOMode.WRITE, ioArgsList);:}
+	    |WRITERETURN IOArgs:ioArgsList SEMI     {:RESULT = new IOArgsOp(IOMode.WRITERETURN, ioArgsList);:}
+	    |READ IOArgs:ioArgsList SEMI            {:RESULT = new IOArgsOp(IOMode.READ, ioArgsList);:}
+	    |IfStat:ifStat SEMI                     {:RESULT = ifStat;:}
+	    |WhileStat:whileStat SEMI               {:RESULT = whileStat;:}
+;
+
+/*IOArgs ::= Expr:e IOArgs:ioArgs                          {:if(ioArgs == null) ioArgs = new LinkedList<Expr>();
+                                                           ioArgs.add(0, e);
+                                                           RESULT = ioArgs;
+                                                          :}
+           |DOLLARSIGN LPAR Expr:e RPAR IOArgs:ioArgs      {:if(ioArgs == null) ioArgs = new LinkedList<Expr>();
+                                                             ioArgs.add(0, e);
+                                                             RESULT = ioArgs;
+                                                           :}
+           |/* empty */   /*                                 {:RESULT = null;:}
+;
+*/
+
+IOArgs ::= Expr:e                                                   {:LinkedList<Expr> exprList = new LinkedList<Expr>();
+                                                                      exprList.add(0, e);
+                                                                      RESULT = exprList;
+                                                                    :}
+           |Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:ioArgs      {:if(ioArgs == null) ioArgs = new LinkedList<Expr>();
+                                                                      ioArgs.add(0, e2);
+                                                                      ioArgs.add(0, e1);
+                                                                      RESULT = ioArgs;
+                                                                    :}
+           |DOLLARSIGN LPAR Expr:e RPAR IOArgs:ioArgs               {:if(ioArgs == null) ioArgs = new LinkedList<Expr>();
+                                                                      ioArgs.add(0, e);
+                                                                      RESULT = ioArgs;
+                                                                     :}
+           |/* empty */                                             {:RESULT = null;:}
+;
+
+ProcCall ::= ID:id LPAR ProcExprs:exprList RPAR     {:RESULT = new ProcCallOp(new Id(id), exprList);:}
+            |ID:id LPAR RPAR                        {:RESULT = new ProcCallOp(new Id(id), null);:}
+;
+
+ProcExprs::= Expr:expr COMMA ProcExprs:exprList     {:exprList.add(0, new ProcExpr(false, expr));
+                                                      RESULT = exprList;
+                                                    :}
+	        |REF ID:id COMMA ProcExprs:exprList     {:exprList.add(0, new ProcExpr(true, new Id(id)));
+	                                                  RESULT = exprList;
+	                                                :}
+            |Expr:expr                              {:LinkedList<ProcExpr> procExprList = new LinkedList<>();
+                                                      procExprList.add(0, new ProcExpr(false, expr));
+                                                      RESULT = procExprList;:}
+	        |REF ID:id                              {:LinkedList<ProcExpr> procExprList = new LinkedList<>();
+                                                      procExprList.add(0, new ProcExpr(true, new Id(id)));
+	                                                  RESULT = procExprList;
+	                                                 :}
+;
+
+IfStat ::= IF Expr:expr THEN Body:b Elifs:elifs Else:el ENDIF {:RESULT = new IfOp(expr, b, elifs, el);:}
+;
+
+Elifs ::= Elif:elif Elifs:elifs	                    {:if(elifs == null) elifs = new LinkedList<ElifOp>();
+                                                      elifs.add(0, elif);
+                                                      RESULT = elifs;
+                                                    :}
+      | /* empty */ 	                            {:RESULT = null;:}
+;
+
+Elif ::= ELIF Expr:expr THEN Body:b                 {:RESULT = new ElifOp(expr, b);:}
+;
+
+Else ::= ELSE Body:b                                {:RESULT = b;:}
+     | /* empty */                                  {:RESULT = null;:}
+;
+
+WhileStat ::= WHILE Expr:expr DO Body:b ENDWHILE    {:RESULT = new WhileOp(expr, b);:}
+;
+FunCall ::= ID:id LPAR Exprs:e RPAR          {:RESULT = new FunCallOp(new Id(id), e);:}
+            |ID:id LPAR RPAR                 {:RESULT = new FunCallOp(new Id(id), null);:}
+;
+
+Exprs ::= Expr:e COMMA Exprs:eList      {:eList.add(0, e);
+                                          RESULT = eList;
+                                        :}
+	    | Expr:e                        {:LinkedList<Expr> exprList = new LinkedList<>();
+                                          exprList.add(0, e);
+                                          RESULT = exprList;
+                                        :}
+;
+
+Expr ::= FunCall:fc                  {:RESULT = fc;:}
+	    |REAL_CONST:ct               {:RESULT = new RealConstNode(Float.valueOf((String)ct));:}
+        |INTEGER_CONST:ct            {:RESULT = new IntConstNode(Integer.parseInt((String)ct));:}
+	    |STRING_CONST:ct             {:RESULT = new StringConstNode((String) ct);:}
+	    |ID:id                       {:RESULT = new Id(id);:}
+        |TRUE                        {:RESULT = new BoolConstNode(true);:}
+        |FALSE                       {:RESULT = new BoolConstNode(false);:}
+        |Expr:e1 PLUS Expr:e2        {:RESULT = new AddOp(e1, e2);:}
+	    |Expr:e1 MINUS Expr:e2       {:RESULT = new DiffOp(e1, e2);:}
+	    |Expr:e1 TIMES Expr:e2       {:RESULT = new MulOp(e1, e2);:}
+	    |Expr:e1 DIV Expr:e2         {:RESULT = new DivOp(e1, e2);:}
+	    |Expr:e1 AND Expr:e2         {:RESULT= new AndOp(e1, e2);:}
+	    |Expr:e1 OR Expr:e2          {:RESULT= new OrOp(e1, e2);:}
+	    |Expr:e1 GT Expr:e2          {:RESULT= new GtOp(e1, e2);:}
+	    |Expr:e1 GE Expr:e2          {:RESULT= new GeOp(e1, e2);:}
+	    |Expr:e1 LT Expr:e2          {:RESULT= new LtOp(e1, e2);:}
+	    |Expr:e1 LE Expr:e2          {:RESULT= new LeOp(e1, e2);:}
+	    |Expr:e1 EQ Expr:e2          {:RESULT= new EqOp(e1, e2);:}
+	    |Expr:e1 NE Expr:e2          {:RESULT= new NeOp(e1, e2);:}
+	    |LPAR Expr:e RPAR            {:RESULT= new BracketsOp(e);:}
+	    |MINUS Expr:e                {:RESULT = new MinusOp(e);:} %prec UMINUS
+	    |NOT Expr:e                  {:RESULT = new NotOp(e);:}
+;
+
