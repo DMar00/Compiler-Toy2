@@ -1,5 +1,10 @@
 package main.table;
 
+import main.syntaxtree.nodes.expr.Id;
+import main.syntaxtree.nodes.expr.constNodes.ConstNode;
+
+import java.util.Map;
+
 public class SymbolTable {
     private SymbolNode activeTable = null;
 
@@ -11,6 +16,10 @@ public class SymbolTable {
         if(activeTable != null && activeTable.getParent() != null) {
             activeTable = activeTable.getParent();
         }
+    }
+
+    public void exitScopeNull(){
+            activeTable = activeTable.getParent();
     }
 
     public SymbolItem lookup(String idName) {
@@ -40,4 +49,22 @@ public class SymbolTable {
             activeTable.put(item.getId(), item);
         }
     }
+
+    public SymbolNode getActiveTable() {
+        return activeTable;
+    }
+
+    public void setActiveTable(SymbolNode activeTable) {
+        this.activeTable = activeTable;
+    }
+
+    @Override
+    public String toString() {
+        if (activeTable != null) {
+            return activeTable.toString();
+        } else {
+            return "No active table.";
+        }
+    }
+
 }

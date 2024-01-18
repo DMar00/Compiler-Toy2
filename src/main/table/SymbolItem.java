@@ -18,6 +18,9 @@ public class SymbolItem {
     //Marker
     private boolean marker;
 
+    public SymbolItem() {
+    }
+
     //costruttore per variabili
     public SymbolItem(String id, Type varType) {
         this.id = id;
@@ -35,6 +38,17 @@ public class SymbolItem {
         this.itemType = SymbolItemType.FUNCTION;
         this.params = params;
         this.returnType = returnType;
+        this.hasReturnType = false;
+        this.varType = null;
+        this.marker = true;
+    }
+
+    //costruttore per funzioni
+    public SymbolItem(String id, List<ProcFunParamOp> params) {
+        this.id = id;
+        this.itemType = SymbolItemType.PROCEDURE;
+        this.params = params;
+        this.returnType = null;
         this.hasReturnType = false;
         this.varType = null;
         this.marker = true;
@@ -94,5 +108,10 @@ public class SymbolItem {
 
     public void setMarker(boolean marker) {
         this.marker = marker;
+    }
+
+    @Override
+    public String toString() {
+        return "[id: "+id+", type: "+itemType+"]";
     }
 }

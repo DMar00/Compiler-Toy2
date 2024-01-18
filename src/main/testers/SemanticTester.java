@@ -3,6 +3,7 @@ package main.testers;
 import main.output_cup.Parser;
 import main.output_jflex.Lexer;
 import main.syntaxtree.nodes.ProgramOp;
+import main.syntaxtree.visitor.SemanticVisitor;
 import main.syntaxtree.visitor.XMLVisitor;
 import main.table.SymbolTable;
 
@@ -27,13 +28,16 @@ public class SemanticTester {
             astRoot.accept(xmlGen);*/
 
             SymbolTable symbolTable = new SymbolTable();
+            SemanticVisitor scopingVisitor = new SemanticVisitor(symbolTable);
+            astRoot.accept(scopingVisitor);
+            //System.out.println(scopingVisitor.getSymbolTable());
 
 
 
 
 
-            Path percorso = Paths.get(args[0]);
-            String fileName = percorso.getFileName().toString();
+            //Path percorso = Paths.get(args[0]);
+            //String fileName = percorso.getFileName().toString();
             //xmlGen.printToFile("xmlout/ast_" + fileName + ".xml");
         } catch (Exception e) {
             e.printStackTrace();

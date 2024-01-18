@@ -2,7 +2,8 @@ package main.table;
 
 public enum SymbolItemType {
     FUNCTION("function"),
-    VARIABLE("variable");
+    VARIABLE("variable"),
+    PROCEDURE("procedure");
 
     private String name;
 

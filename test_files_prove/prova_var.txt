@@ -1,3 +1,12 @@
+var n : integer;\
+var n1 : integer;\
+
 proc miao():
-    var n, n1:integer ; s, s1: real;\
+    var n1 : integer;\
+    n1 ^= n;
+    var n5: integer;\
+
 endproc
+
+
+
