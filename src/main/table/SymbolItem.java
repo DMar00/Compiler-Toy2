@@ -13,12 +13,13 @@ public class SymbolItem {
     private Type varType;
     //functions
     private List<ProcFunParamOp> params;
-    private Type returnType;
+    private List<Type> returnTypeList;
     private boolean hasReturnType;
     //Marker
     private boolean marker;
 
     public SymbolItem() {
+        this.marker = true;
     }
 
     //costruttore per variabili
@@ -27,17 +28,17 @@ public class SymbolItem {
         this.varType = varType;
         this.itemType = SymbolItemType.VARIABLE;
         this.params = null;
-        this.returnType = null;
+        this.returnTypeList = null;
         this.hasReturnType = false;
         this.marker = true;
     }
 
     //costruttore per funzioni
-    public SymbolItem(String id, List<ProcFunParamOp> params, Type returnType) {
+    public SymbolItem(String id, List<ProcFunParamOp> params, List<Type> returnTypeList) {
         this.id = id;
         this.itemType = SymbolItemType.FUNCTION;
         this.params = params;
-        this.returnType = returnType;
+        this.returnTypeList = returnTypeList;
         this.hasReturnType = false;
         this.varType = null;
         this.marker = true;
@@ -48,7 +49,7 @@ public class SymbolItem {
         this.id = id;
         this.itemType = SymbolItemType.PROCEDURE;
         this.params = params;
-        this.returnType = null;
+        this.returnTypeList = null;
         this.hasReturnType = false;
         this.varType = null;
         this.marker = true;
@@ -86,12 +87,12 @@ public class SymbolItem {
         this.params = params;
     }
 
-    public Type getReturnType() {
-        return returnType;
+    public List<Type> getReturnTypeList() {
+        return returnTypeList;
     }
 
-    public void setReturnType(Type returnType) {
-        this.returnType = returnType;
+    public void setReturnTypeList(List<Type> returnTypeList) {
+        this.returnTypeList = returnTypeList;
     }
 
     public boolean isHasReturnType() {
@@ -112,6 +113,6 @@ public class SymbolItem {
 
     @Override
     public String toString() {
-        return "[id: "+id+", type: "+itemType+"]";
+        return "[id: "+id+", type: "+itemType+", varType: "+varType+", marker: "+marker+"]";
     }
 }

@@ -1,14 +1,33 @@
 package main.table;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
-//String = id
 public class SymbolNode extends HashMap<String, SymbolItem> {
     private SymbolNode parentScope;
-
+    private List<SymbolNode> childrenScopes;
+    private String nameScope;
     public SymbolNode(SymbolNode parent) {
         super();
         parentScope= parent;
+        childrenScopes = new ArrayList<>();
+    }
+
+    public List<SymbolNode> getChildrenScopes() {
+        return childrenScopes;
+    }
+
+    public void addChildScope(SymbolNode child) {
+        this.childrenScopes.add(child);
+    }
+
+    public String getNameScope() {
+        return nameScope;
+    }
+
+    public void setNameScope(String nameScope) {
+        this.nameScope = nameScope;
     }
 
     public SymbolNode getParent() {
@@ -19,18 +38,11 @@ public class SymbolNode extends HashMap<String, SymbolItem> {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("-->\n");
+        sb.append("\n");
         for (String key : keySet()) {
-            sb.append(String.format("\t%s\n", get(key).toString()));
+            sb.append(String.format("%s\n", get(key).toString()));
         }
-
-        // Aggiungi le tabelle dei genitori in modo ricorsivo
-        /*if (parentScope != null) {
-            sb.append("\nParent Table:\n");
-            sb.append(parentScope.toString());
-        }*/
 
         return sb.toString();
     }
-
 }

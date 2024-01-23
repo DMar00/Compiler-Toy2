@@ -1,12 +1,9 @@
-var n : integer;\
-var n1 : integer;\
+var n:real;\
+var n3:real;\
 
-proc miao():
-    var n1 : integer;\
-    n1 ^= n;
-    var n5: integer;\
-
+proc main():
+     n ^= n1;
 endproc
 
-
-
+var n1:real;\
+var n2:real;\

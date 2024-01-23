@@ -2,16 +2,12 @@ package main.testers;
 
 import main.output_cup.Parser;
 import main.output_jflex.Lexer;
+import main.syntaxtree.visitor.SemanticVisitorCreateTables;
+import main.syntaxtree.visitor.SemanticVisitorReadTables;
 import main.syntaxtree.nodes.ProgramOp;
-import main.syntaxtree.visitor.SemanticVisitor;
-import main.syntaxtree.visitor.XMLVisitor;
-import main.table.SymbolTable;
-
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class SemanticTester {
     public static void main(String[] args) throws FileNotFoundException {
@@ -27,13 +23,14 @@ public class SemanticTester {
             /*XMLVisitor xmlGen = new XMLVisitor();
             astRoot.accept(xmlGen);*/
 
-            SymbolTable symbolTable = new SymbolTable();
-            SemanticVisitor scopingVisitor = new SemanticVisitor(symbolTable);
+            //SymbolTable symbolTable = new SymbolTable();
+            //1° visita
+            SemanticVisitorCreateTables scopingVisitor = new SemanticVisitorCreateTables();
             astRoot.accept(scopingVisitor);
-            //System.out.println(scopingVisitor.getSymbolTable());
 
-
-
+            //2° visita
+            SemanticVisitorReadTables scopingVisitor2 = new SemanticVisitorReadTables(scopingVisitor.getActiveSymbolTable());
+            astRoot.accept(scopingVisitor2);
 
 
             //Path percorso = Paths.get(args[0]);
