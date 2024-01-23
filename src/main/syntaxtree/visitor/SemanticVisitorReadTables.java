@@ -1,9 +1,6 @@
 package main.syntaxtree.visitor;
 
-import main.exceptions.IdNotDeclared;
-import main.exceptions.MainNotFound;
-import main.exceptions.MismatchedParameterCount;
-import main.exceptions.MismatchedTypes;
+import main.exceptions.*;
 import main.syntaxtree.enums.Type;
 import main.table.SymbolNode;
 import main.table.SymbolTable;
@@ -20,6 +17,7 @@ import main.syntaxtree.nodes.iter.VarDeclOp;
 import main.syntaxtree.nodes.stat.*;
 import main.table.SymbolItem;
 import main.table.SymbolItemType;
+import main.typecheck.CompType;
 import main.utils.Utils;
 
 import java.util.ArrayList;
@@ -73,6 +71,18 @@ public class SemanticVisitorReadTables implements Visitor {
         }
     }
 
+    private Type visitBinaryExpr(BinaryExpr expr){
+        expr.rightNode.accept(this);
+        expr.leftNode.accept(this);
+
+        //controllo compatibilità tipi nell'espressione binaria
+        Type type = CompType.getTypeFromBinaryExpr(expr);
+        if(type == null)
+            throw new InvalidTypeForBinaryExpr(expr.name, expr.leftNode.getNodeType(), expr.rightNode.getNodeType());
+
+        return type;
+    }
+
     /*-------------------Interface methods---------------------*/
     @Override
     public Object visit(ProgramOp programOp) {
@@ -94,8 +104,7 @@ public class SemanticVisitorReadTables implements Visitor {
         if(!mainFound)
             throw new MainNotFound();
 
-        //TODO
-        //controllo nello scope globale le assegnazioni che abbiano tipi validi
+        //nello scope globale non c'è bisogno di fare controlli su assegnazioni etc perchè non si possono fare
 
         //controllo gli scope figli dello scope globale
         if(programOp.itersList!=null){
@@ -150,7 +159,7 @@ public class SemanticVisitorReadTables implements Visitor {
             e.accept(this);
         }
 
-        //TODO tipi assegnamenti consentiti
+        //CONTROLLO tipi e numero di variabili/funCall per le assegnazioni
         //n1 ^= n6;
         //n1, ..., nn ^= s1, ...., sn
         //n1, ..., nn ^= s1, ..., func() ...   -->     n1, n2, n3 ^= s1, func()
@@ -175,7 +184,7 @@ public class SemanticVisitorReadTables implements Visitor {
                     for(Type t: funFound.getReturnTypeList()){
                         exprDX.add(t);
                     }
-                }else{  //n1 ^= 5+3-1;
+                }else{  //n1 ^= 5+3-1;  ||  n1, ... ^= n4, ...;
                     Type t = e.getNodeType();
                     boolean isId = e instanceof Id;
                     System.out.println("E' un id? "+isId+"..:"+t);
@@ -223,9 +232,70 @@ public class SemanticVisitorReadTables implements Visitor {
         return null;
     }
 
+    /*--------*/
+
+    @Override
+    public Object visit(AddOp addOp) {
+        Type t = visitBinaryExpr(addOp);
+        addOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(DiffOp diffOp) {
+        Type t = visitBinaryExpr(diffOp);
+        diffOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(DivOp divOp) {
+        Type t = visitBinaryExpr(divOp);
+        divOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(MulOp mulOp) {
+        Type t = visitBinaryExpr(mulOp);
+        mulOp.setNodeType(t);
+        return null;
+    }
+
+    /*--------*/
+
+    @Override
+    public Object visit(IntConstNode constNode) {
+        constNode.setNodeType(Type.INTEGER);
+        return null;
+    }
+
+    @Override
+    public Object visit(RealConstNode constNode) {
+        constNode.setNodeType(Type.REAL);
+        return null;
+    }
+
+    @Override
+    public Object visit(StringConstNode constNode) {
+        constNode.setNodeType(Type.STRING);
+        return null;
+    }
+
+    @Override
+    public Object visit(BoolConstNode constNode) {
+        constNode.setNodeType(Type.BOOLEAN);
+        return null;
+    }
+
+    /*--------*/
+
     /*-------------------------------------------------*/
 
 
+
+
+    /*-------------------------------------------------*/
     @Override
     public Object visit(VarDeclOp varDeclOp) {
         return null;
@@ -233,26 +303,6 @@ public class SemanticVisitorReadTables implements Visitor {
 
     @Override
     public Object visit(FunDeclOp funDeclOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(IntConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(RealConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(StringConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(BoolConstNode constNode) {
         return null;
     }
 
@@ -282,22 +332,7 @@ public class SemanticVisitorReadTables implements Visitor {
     }
 
     @Override
-    public Object visit(AddOp addOp) {
-        return null;
-    }
-
-    @Override
     public Object visit(AndOp andOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(DiffOp diffOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(DivOp divOp) {
         return null;
     }
 
@@ -323,11 +358,6 @@ public class SemanticVisitorReadTables implements Visitor {
 
     @Override
     public Object visit(LtOp ltOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(MulOp mulOp) {
         return null;
     }
 
