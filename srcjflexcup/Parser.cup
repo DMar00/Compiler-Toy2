@@ -8,6 +8,7 @@ import main.syntaxtree.nodes.expr.*;
 import main.syntaxtree.nodes.iter.*;
 import main.syntaxtree.nodes.expr.constNodes.*;
 import main.syntaxtree.nodes.expr.binExpr.*;
+import main.syntaxtree.nodes.expr.unExpr.*;
 import main.syntaxtree.nodes.stat.*;
 import java.util.LinkedList;
 import java.util.HashMap;
@@ -383,7 +384,7 @@ Expr ::= FunCall:fc                  {:RESULT = fc;:}
 	    |Expr:e1 LE Expr:e2          {:RESULT= new LeOp(e1, e2);:}
 	    |Expr:e1 EQ Expr:e2          {:RESULT= new EqOp(e1, e2);:}
 	    |Expr:e1 NE Expr:e2          {:RESULT= new NeOp(e1, e2);:}
-	    |LPAR Expr:e RPAR            {:RESULT= new BracketsOp(e);:}
+	    |LPAR Expr:e RPAR            {:RESULT = (Expr) e;:}
 	    |MINUS Expr:e                {:RESULT = new MinusOp(e);:} %prec UMINUS
 	    |NOT Expr:e                  {:RESULT = new NotOp(e);:}
 ;

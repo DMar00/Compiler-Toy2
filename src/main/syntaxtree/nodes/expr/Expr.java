@@ -6,8 +6,4 @@ public abstract class Expr extends Node {
     public Expr(String name) {
         super(name);
     }
-
-    /*public Object accept(Visitor visitor){
-        return visitor.visit(this);
-    }*/
 }

@@ -2,6 +2,8 @@ package main.syntaxtree.visitor;
 
 import main.exceptions.IdAlreadyDeclared;
 import main.exceptions.IdAlreadyDeclaredOtherType;
+import main.syntaxtree.nodes.expr.unExpr.MinusOp;
+import main.syntaxtree.nodes.expr.unExpr.NotOp;
 import main.table.SymbolTable;
 import main.utils.Utils;
 import main.syntaxtree.enums.Type;
@@ -105,6 +107,9 @@ public class SemanticVisitorCreateTables implements Visitor {
         Id procId = procOp.procName;
         String procedureName = procId.idName;
 
+        //TODO paramtri procedura da aggiungere
+        //TODO due procedure con stesso nome ma con parametri diversi, si può?
+
         //controllo se nella tabella globale è presente una procedura o altro con lo stesso nome
         if(activeSymbolTable.probe(procedureName)){
             checkIdAlreadyDeclared(procedureName, SymbolItemType.PROCEDURE);
@@ -145,12 +150,17 @@ public class SemanticVisitorCreateTables implements Visitor {
     /*---------------------------------------------------------*/
 
     @Override
-    public Object visit(Id id) {
+    public Object visit(FunDeclOp funDeclOp) {
         return null;
     }
 
     @Override
-    public Object visit(FunDeclOp funDeclOp) {
+    public Object visit(ProcFunParamOp procFunParamOp) {
+        return null;
+    }
+
+    @Override
+    public Object visit(Id id) {
         return null;
     }
 
@@ -171,11 +181,6 @@ public class SemanticVisitorCreateTables implements Visitor {
 
     @Override
     public Object visit(BoolConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(ProcFunParamOp procFunParamOp) {
         return null;
     }
 
@@ -261,11 +266,6 @@ public class SemanticVisitorCreateTables implements Visitor {
 
     @Override
     public Object visit(OrOp orOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(BracketsOp bracketsOp) {
         return null;
     }
 

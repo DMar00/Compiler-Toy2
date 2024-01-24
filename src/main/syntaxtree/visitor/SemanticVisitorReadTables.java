@@ -2,24 +2,16 @@ package main.syntaxtree.visitor;
 
 import main.exceptions.*;
 import main.syntaxtree.enums.Type;
-import main.table.SymbolNode;
-import main.table.SymbolTable;
-import main.syntaxtree.nodes.BodyOp;
-import main.syntaxtree.nodes.ProcFunParamOp;
-import main.syntaxtree.nodes.ProgramOp;
+import main.syntaxtree.nodes.expr.unExpr.*;
+import main.table.*;
+import main.syntaxtree.nodes.*;
 import main.syntaxtree.nodes.expr.*;
 import main.syntaxtree.nodes.expr.binExpr.*;
 import main.syntaxtree.nodes.expr.constNodes.*;
-import main.syntaxtree.nodes.iter.FunDeclOp;
-import main.syntaxtree.nodes.iter.IterOp;
-import main.syntaxtree.nodes.iter.ProcOp;
-import main.syntaxtree.nodes.iter.VarDeclOp;
+import main.syntaxtree.nodes.iter.*;
 import main.syntaxtree.nodes.stat.*;
-import main.table.SymbolItem;
-import main.table.SymbolItemType;
 import main.typecheck.CompType;
 import main.utils.Utils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +75,18 @@ public class SemanticVisitorReadTables implements Visitor {
         return type;
     }
 
+    private Type visitUnaryExpr(UnaryExpr expr){
+        expr.rightNode.accept(this);
+
+        //controllo tipi nell'espressione
+        Type type = CompType.getTypeFromUnaryExpr(expr);
+
+        if(type == null)
+            throw new InvalidTypeForUnaryExpr(expr.name, expr.rightNode.getNodeType());
+
+        return type;
+    }
+
     /*-------------------Interface methods---------------------*/
     @Override
     public Object visit(ProgramOp programOp) {
@@ -127,6 +131,8 @@ public class SemanticVisitorReadTables implements Visitor {
 
         //attivo tabella della proc con nome procName
         activeSymbolTable.enterSpecificScope(procName);
+
+        //TODO paramtri procedura da controllare
 
         //controllo marker dichiarazioni in tabella scope corrente
         checkMarkerTrue();
@@ -218,7 +224,7 @@ public class SemanticVisitorReadTables implements Visitor {
 
         //se nella tabella corrente non è stato dichiarato, quindi non è presente
         //controllo negli scope precedenti che sia dichiarato
-        SymbolItem found = new SymbolItem();
+        SymbolItem found;
         if(!activeSymbolTable.probe(idName)){
             found = findInOtherScope(idName);
             System.out.println(idName+": In altro scope");
@@ -290,8 +296,82 @@ public class SemanticVisitorReadTables implements Visitor {
 
     /*--------*/
 
-    /*-------------------------------------------------*/
+    @Override
+    public Object visit(AndOp andOp) {
+        Type t = visitBinaryExpr(andOp);
+        andOp.setNodeType(t);
+        return null;
+    }
 
+    @Override
+    public Object visit(OrOp orOp) {
+        Type t = visitBinaryExpr(orOp);
+        orOp.setNodeType(t);
+        return null;
+    }
+
+    /*--------*/
+
+    @Override
+    public Object visit(EqOp eqOp) {
+        Type t = visitBinaryExpr(eqOp);
+        eqOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(GeOp geOp) {
+        Type t = visitBinaryExpr(geOp);
+        geOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(GtOp gtOp) {
+        Type t = visitBinaryExpr(gtOp);
+        gtOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(LeOp leOp) {
+        Type t = visitBinaryExpr(leOp);
+        leOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(LtOp ltOp) {
+        Type t = visitBinaryExpr(ltOp);
+        ltOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(NeOp neOp) {
+        Type t = visitBinaryExpr(neOp);
+        neOp.setNodeType(t);
+        return null;
+    }
+
+    /*--------*/
+
+    @Override
+    public Object visit(MinusOp minusOp) {
+        Type t = visitUnaryExpr(minusOp);
+        minusOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(NotOp notOp) {
+        Type t = visitUnaryExpr(notOp);
+        notOp.setNodeType(t);
+        return null;
+    }
+
+
+    /*-------------------------------------------------*/
 
 
 
@@ -312,67 +392,12 @@ public class SemanticVisitorReadTables implements Visitor {
     }
 
     @Override
-    public Object visit(MinusOp minusOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(NotOp notOp) {
-        return null;
-    }
-
-    @Override
     public Object visit(ProcExpr procExpr) {
         return null;
     }
 
     @Override
     public Object visit(FunCallOp funCallOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(AndOp andOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(EqOp eqOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(GeOp geOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(GtOp gtOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(LeOp leOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(LtOp ltOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(NeOp neOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(OrOp orOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(BracketsOp bracketsOp) {
         return null;
     }
 

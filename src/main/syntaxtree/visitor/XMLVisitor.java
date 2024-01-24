@@ -9,6 +9,8 @@ import main.syntaxtree.nodes.ProgramOp;
 import main.syntaxtree.nodes.expr.*;
 import main.syntaxtree.nodes.expr.binExpr.*;
 import main.syntaxtree.nodes.expr.constNodes.*;
+import main.syntaxtree.nodes.expr.unExpr.MinusOp;
+import main.syntaxtree.nodes.expr.unExpr.NotOp;
 import main.syntaxtree.nodes.iter.FunDeclOp;
 import main.syntaxtree.nodes.iter.IterOp;
 import main.syntaxtree.nodes.iter.ProcOp;
@@ -217,14 +219,14 @@ public class XMLVisitor implements Visitor{
     @Override
     public Object visit(MinusOp minusOp) {
         Element tag = document.createElement(minusOp.name);
-        tag.appendChild((Node) minusOp.expr.accept(this));
+        tag.appendChild((Node) minusOp.rightNode.accept(this));
         return tag;
     }
 
     @Override
     public Object visit(NotOp notOp) {
         Element tag = document.createElement(notOp.name);
-        tag.appendChild((Node) notOp.expr.accept(this));
+        tag.appendChild((Node) notOp.rightNode.accept(this));
         return tag;
     }
 
@@ -301,13 +303,6 @@ public class XMLVisitor implements Visitor{
     @Override
     public Object visit(OrOp orOp) {
         return createBinaryOpTag(orOp);    }
-
-    @Override
-    public Object visit(BracketsOp bracketsOp) {
-        Element tag = document.createElement(bracketsOp.name);
-        tag.appendChild((Node) bracketsOp.expr.accept(this));
-        return tag;
-    }
 
     @Override
     public Object visit(ElifOp elifOp) {
