@@ -1,12 +1,4 @@
-var n:real;\
-var n3:real;\
-
 proc main():
-     n ^= n1;
-     n2 ^= (5 + 6) - 3 * 7;
-     n2 ^= 5 + n2;
-     %n2 ^= 6 / n;%
+     var a,b:integer;\
+     return a;
 endproc
-
-var n1:real;\
-var n2:integer;\

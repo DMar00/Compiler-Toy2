@@ -1,7 +1,6 @@
 package main.syntaxtree.visitor;
 
-import main.exceptions.IdAlreadyDeclared;
-import main.exceptions.IdAlreadyDeclaredOtherType;
+import main.exceptions.*;
 import main.syntaxtree.nodes.expr.unExpr.MinusOp;
 import main.syntaxtree.nodes.expr.unExpr.NotOp;
 import main.table.SymbolTable;
@@ -20,6 +19,9 @@ import main.syntaxtree.nodes.iter.VarDeclOp;
 import main.syntaxtree.nodes.stat.*;
 import main.table.SymbolItem;
 import main.table.SymbolItemType;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -98,7 +100,10 @@ public class SemanticVisitorCreateTables implements Visitor {
                 else
                     checkIdAlreadyDeclared(idString, SymbolItemType.VARIABLE);
             }
+
+            idName.accept(this);
         }
+
         return null;
     }
 
@@ -107,12 +112,30 @@ public class SemanticVisitorCreateTables implements Visitor {
         Id procId = procOp.procName;
         String procedureName = procId.idName;
 
-        //TODO paramtri procedura da aggiungere
-        //TODO due procedure con stesso nome ma con parametri diversi, si può?
+        //due procedure con stesso nome ma con parametri diversi, si può? PER NOI NO (SCELTA)
 
         //controllo se nella tabella globale è presente una procedura o altro con lo stesso nome
         if(activeSymbolTable.probe(procedureName)){
             checkIdAlreadyDeclared(procedureName, SymbolItemType.PROCEDURE);
+        }
+
+        //controllo che si può fare già in ProcParam, dove lancio eccezione se già ci sta
+        //controllo se ci sono paramentri con stesso id
+        if(procOp.procParamsList!=null && procOp.procParamsList.size()>0){
+            List<String> newList = new ArrayList<>();
+            for(ProcFunParamOp p : procOp.procParamsList){
+                String s = p.id.idName;
+                if(!newList.contains(s))
+                    newList.add(s);
+                else
+                    throw new ParamAlreadyDeclared(s, procedureName, SymbolItemType.PROCEDURE.toString());
+            }
+        }
+
+        //controllo che non ci sia return
+        for(Stat s : procOp.procBody.statList){
+            if (s instanceof ReturnOp)
+                throw new UnexpectedReturn(procedureName);
         }
 
         //aggiungo la procedura alla tabella dei simboli
@@ -123,6 +146,13 @@ public class SemanticVisitorCreateTables implements Visitor {
 
         //creo la tabella dei simboli per questa procedura
         activeSymbolTable.enterScope(procedureName);
+
+        //visit di ogni parametro (così lo aggiungiamo alla tabella dei simboli della proc)
+        if(procOp.procParamsList!=null && procOp.procParamsList.size()>0){
+            for(ProcFunParamOp p : procOp.procParamsList){
+                p.accept(this);
+            }
+        }
 
         //aggiungo come nodo figlio la nuova tabella procedure al padre
         activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
@@ -137,6 +167,20 @@ public class SemanticVisitorCreateTables implements Visitor {
     }
 
     @Override
+    public Object visit(ProcFunParamOp procFunParamOp) {
+        String id = procFunParamOp.id.idName;
+        Type t = procFunParamOp.type;
+        if(!activeSymbolTable.probe(id)){
+            SymbolItem symbolItem = new SymbolItem(id, t);
+            symbolItem.setMarker(false);
+            activeSymbolTable.addId(symbolItem);
+        }
+
+        procFunParamOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
     public Object visit(BodyOp bodyOp) {
         for(VarDeclOp var: bodyOp.varDeclOpList){
             var.accept(this);
@@ -147,20 +191,123 @@ public class SemanticVisitorCreateTables implements Visitor {
         return null;
     }
 
-    /*---------------------------------------------------------*/
-
     @Override
     public Object visit(FunDeclOp funDeclOp) {
-        return null;
-    }
+        String funcName = funDeclOp.functionName.idName;
+        List<ProcFunParamOp> funParameters = funDeclOp.functionParamList;
+        List<Type> funReturnTypes = funDeclOp.functionReturTypeList;
 
-    @Override
-    public Object visit(ProcFunParamOp procFunParamOp) {
+        //verifico che non ci sia altro definito con lo stesso nome
+        if(activeSymbolTable.probe(funcName)){
+            checkIdAlreadyDeclared(funcName, SymbolItemType.FUNCTION);
+        }
+
+        //controllo che si può fare già in ProcParam, dove lancio eccezione se già ci sta
+        //controllo se ci sono paramentri con stesso id
+        if(funParameters!=null && funParameters.size()>0){
+            List<String> newList = new ArrayList<>();
+            for(ProcFunParamOp p : funParameters){
+                String s = p.id.idName;
+                if(!newList.contains(s))
+                    newList.add(s);
+                else
+                    throw new ParamAlreadyDeclared(s, funcName, SymbolItemType.FUNCTION.toString());
+            }
+        }
+
+        //controllo che i tipi di ritorno siano superiori ad 1
+        if(!(funReturnTypes.size()>1))
+            throw new InvalidReturnValue();
+
+        //controllo che ci sia il return
+        int i = 0;
+        for(Stat s : funDeclOp.functionBody.statList){
+            if (s instanceof ReturnOp){
+                i++;
+                ReturnOp returnOp = (ReturnOp) s;
+                if(returnOp.exprList.size()!= funReturnTypes.size())
+                    throw new MismatchedReturnCount(funcName, returnOp.exprList.size(), funReturnTypes.size());
+                //TODO va bene che devono essere stesso tipo ?
+                for(int j=0; j<funReturnTypes.size(); j++){
+                    //TODO come mi prendo tipo per returnOp.exprList.get(j).getNodeType()?
+                    /*if(!(funReturnTypes.get(j)==returnOp.exprList.get(j).getNodeType())){
+                        func ciao() -> integer, integer:
+                            return 5+5, 6+6;
+                        endfunc;
+                    }*/
+                }
+            }
+
+        }
+        if(!(i==1))
+            throw new InvalidReturnCountException(funcName);
+
+
+        //aggiungo la funzione alla tabella dei simboli
+        // globale + setto marker false in quanto sto definendo funzione
+        SymbolItem item = new SymbolItem(funcName, funParameters, funReturnTypes);
+        item.setMarker(false);
+        activeSymbolTable.addId(item);
+
+        //creo la tabella dei simboli per questa funzione
+        activeSymbolTable.enterScope(funcName);
+
+        //visit di ogni parametro (così lo aggiungiamo alla tabella dei simboli della func)
+        if(funParameters!=null && funParameters.size()>0){
+            for(ProcFunParamOp p : funParameters){
+                p.accept(this);
+            }
+        }
+
+        //aggiungo come nodo figlio la nuova tabella funzione al padre
+        activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
+
+        //visitiamo il corpo della funzione per riempire la tabella della funzione
+        funDeclOp.functionBody.accept(this);
+
+        //usciamo dalla tabella della funzione e torniamo al padre (tab globale)
+        activeSymbolTable.exitScope();
+
         return null;
     }
 
     @Override
     public Object visit(Id id) {
+        String idName = id.idName;
+
+        SymbolItem found = activeSymbolTable.lookup(idName);
+
+        id.setNodeType(found.getVarType());
+        return null;
+    }
+
+    @Override
+    public Object visit(ReturnOp returnOp) {
+        for(Expr e: returnOp.exprList)
+            e.accept(this);
+        return null;
+    }
+
+    /*---------------------------------------------------------*/
+
+
+    @Override
+    public Object visit(ElifOp elifOp) {
+        return null;
+    }
+
+    @Override
+    public Object visit(IfOp ifOp) {
+        return null;
+    }
+
+    @Override
+    public Object visit(WhileOp whileOp) {
+        return null;
+    }
+
+    @Override
+    public Object visit(IOArgsOp ioArgsOp) {
         return null;
     }
 
@@ -271,31 +418,6 @@ public class SemanticVisitorCreateTables implements Visitor {
 
     @Override
     public Object visit(ProcCallOp procCallOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(ReturnOp returnOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(ElifOp elifOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(IfOp ifOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(WhileOp whileOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(IOArgsOp ioArgsOp) {
         return null;
     }
 

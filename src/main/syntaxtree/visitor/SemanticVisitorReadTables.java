@@ -1,6 +1,7 @@
 package main.syntaxtree.visitor;
 
 import main.exceptions.*;
+import main.syntaxtree.enums.Mode;
 import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.expr.unExpr.*;
 import main.table.*;
@@ -132,8 +133,6 @@ public class SemanticVisitorReadTables implements Visitor {
         //attivo tabella della proc con nome procName
         activeSymbolTable.enterSpecificScope(procName);
 
-        //TODO paramtri procedura da controllare
-
         //controllo marker dichiarazioni in tabella scope corrente
         checkMarkerTrue();
 
@@ -193,7 +192,7 @@ public class SemanticVisitorReadTables implements Visitor {
                 }else{  //n1 ^= 5+3-1;  ||  n1, ... ^= n4, ...;
                     Type t = e.getNodeType();
                     boolean isId = e instanceof Id;
-                    System.out.println("E' un id? "+isId+"..:"+t);
+                    //System.out.println("E' un id? "+isId+"..:"+t);
                     exprDX.add(t);
                 }
             }
@@ -202,9 +201,9 @@ public class SemanticVisitorReadTables implements Visitor {
             //di parametri giusto per l'assegnazione, quindi possiamo controllare i tipi
             if(idsSX.size() == exprDX.size()){
                 for(int i = 0 ; i<idsSX.size(); i++){
-                    //TODO l'assegnazione quindi è possibile solo tra tipi uguali ?
+                    //L'assegnazione è possibile solo tra tipi uguali
                     if(idsSX.get(i).getNodeType() != exprDX.get(i)){
-                        System.out.println("id: "+idsSX.get(i).getNodeType()+", e: "+exprDX.get(i));
+                        //System.out.println("id: "+idsSX.get(i).getNodeType()+", e: "+exprDX.get(i));
                         throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
                     }
 
@@ -227,10 +226,8 @@ public class SemanticVisitorReadTables implements Visitor {
         SymbolItem found;
         if(!activeSymbolTable.probe(idName)){
             found = findInOtherScope(idName);
-            System.out.println(idName+": In altro scope");
         }else{
             found = activeSymbolTable.lookup(idName);
-            System.out.println(idName+": In scope");
         }
 
         id.setNodeType(found.getVarType());
@@ -370,16 +367,88 @@ public class SemanticVisitorReadTables implements Visitor {
         return null;
     }
 
+    /*--------*/
 
-    /*-------------------------------------------------*/
-
-
-
-    /*-------------------------------------------------*/
     @Override
-    public Object visit(VarDeclOp varDeclOp) {
+    public Object visit(ProcCallOp procCallOp) {
+        String procName = procCallOp.procName.idName;
+        List<ProcExpr> procParam = procCallOp.exprList;
+
+        //visito ogni parametro
+        if(procParam != null && procParam.size()>0){
+            for(ProcExpr e : procParam){
+                e.accept(this);
+            }
+        }
+
+        int sizeParam = 0;
+        int sizeParamFound = 0;
+        if(procParam != null) sizeParam = procParam.size();
+
+        //controllo in tab globale (solo lì sono definite procedure) se c'è una proc con nome procName
+        SymbolTable copy = activeSymbolTable.clone();
+        copy.enterSpecificScope(Utils.rootNodeName);
+        SymbolItem found = copy.lookup(procName);
+
+        if(found != null && found.getItemType()==SymbolItemType.PROCEDURE){
+
+            List<ProcFunParamOp> paramsFound = found.getParams();
+            /*for(ProcFunParamOp o : paramsFound)
+                System.out.println("param found: "+o.id.idName+" -->  "+o.getNodeType());*/
+
+            /*for(ProcExpr e : procParam){
+                Id kk = (Id)((Expr)e.expr);
+                System.out.println("param written: "+kk.idName+" -->  "+kk.getNodeType());
+            }*/
+
+
+            if(paramsFound != null) sizeParamFound = paramsFound.size();
+
+            //controllo che il numero di paratri nella chiamata sia corretto
+            if(procParam!= null && paramsFound != null && (procParam.size() == paramsFound.size())){
+                for(int i=0; i<paramsFound.size(); i++){
+                    String idProcParam;
+                    if(procParam.get(i).expr instanceof Id)
+                        idProcParam = ((Id)(procParam.get(i).expr)).idName;
+                    else
+                        idProcParam = "Expr";
+
+
+                    //controllo che i tipi coincidano
+                    if(! (procParam.get(i).expr.getNodeType() == paramsFound.get(i).type))
+                        throw new InvalidParameterType(SymbolItemType.PROCEDURE.toString(), procName, paramsFound.get(i).type.toString(), procParam.get(i).expr.getNodeType().toString());
+                    //controllo che se c'è @ allora il paramsFound(i) c'è MODE = OUT
+                    //e che dopo @ ci sia un id
+                    if(procParam.get(i).procMode){  //false = noRif (per valore), true = per riferimento
+                        if(!(paramsFound.get(i).mode == Mode.OUT))
+                            throw new InvalidParameterReference(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
+                        if(!(procParam.get(i).expr instanceof Id)) //TODO id deve essere per forza variabile?
+                            throw new InvalidParameter(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
+                    }else{
+                        if(paramsFound.get(i).mode == Mode.OUT)
+                            throw new InvalidParameterNotReference(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
+                    }
+                }
+            }else{
+                throw new MismatchedParameterCountCall(SymbolItemType.PROCEDURE.toString(), procName, sizeParamFound, sizeParam);
+            }
+        }else{
+            throw new IdNotDeclared(SymbolItemType.PROCEDURE.toString(), procName);
+        }
         return null;
     }
+
+    @Override
+    public Object visit(ProcExpr procExpr) {
+        procExpr.expr.accept(this);
+        return null;
+    }
+
+    /*-------------------------------------------------*/
+
+
+
+    /*-------------------------------------------------*/
 
     @Override
     public Object visit(FunDeclOp funDeclOp) {
@@ -392,17 +461,7 @@ public class SemanticVisitorReadTables implements Visitor {
     }
 
     @Override
-    public Object visit(ProcExpr procExpr) {
-        return null;
-    }
-
-    @Override
     public Object visit(FunCallOp funCallOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(ProcCallOp procCallOp) {
         return null;
     }
 
@@ -428,6 +487,11 @@ public class SemanticVisitorReadTables implements Visitor {
 
     @Override
     public Object visit(IOArgsOp ioArgsOp) {
+        return null;
+    }
+
+    @Override
+    public Object visit(VarDeclOp varDeclOp) {
         return null;
     }
 

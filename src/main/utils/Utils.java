@@ -2,9 +2,14 @@ package main.utils;
 
 import main.exceptions.IdAlreadyDeclared;
 import main.exceptions.IdAlreadyDeclaredOtherType;
+import main.exceptions.ParamAlreadyDeclared;
 import main.syntaxtree.enums.Type;
+import main.syntaxtree.nodes.ProcFunParamOp;
 import main.syntaxtree.nodes.expr.constNodes.*;
 import main.table.SymbolItemType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Utils {
     public final static String rootNodeName = "Global";
