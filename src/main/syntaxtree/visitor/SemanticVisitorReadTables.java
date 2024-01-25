@@ -638,7 +638,7 @@ public class SemanticVisitorReadTables implements Visitor {
     @Override
     public Object visit(WhileOp whileOp) {
         //entro scope while
-        //activeSymbolTable.enterSpecificScope();
+        activeSymbolTable.enterSpecificScope(getProgressiveName("while"));
 
         //mi assicuro che espressione sia booleana, e la visito
         whileOp.whileExpr.accept(this);
@@ -651,7 +651,7 @@ public class SemanticVisitorReadTables implements Visitor {
         whileOp.doBody.accept(this);
 
         //esco scope while
-
+        activeSymbolTable.exitScope();
         return null;
     }
 
