@@ -273,8 +273,10 @@ Body ::= VarDecl:varList Body:b     {:  b.varDeclOpList.addAll(0, varList);
 
 //n1, n2 ^= n5, 3 ;
 
-Stat ::= Ids:idList ASSIGN Exprs:exprList SEMI  {:  if(idList.size()!=exprList.size())
-                                                        throw new Exception("Mismatch between the number of IDs and exprs detected.");
+Stat ::= Ids:idList ASSIGN Exprs:exprList SEMI  {:  //questo controllo facciamo in analisi semantica, altrimenti mi dà errore su
+                                                    //funzioni che hanno più valori di ritorno
+                                                    /*if(idList.size()!=exprList.size())
+                                                        throw new Exception("Mismatch between the number of IDs and exprs detected.");*/
                                                     RESULT = new AssignOp(idList, exprList);
                                                 :}
 	    |ProcCall:procCall  SEMI                {: RESULT = procCall;:}

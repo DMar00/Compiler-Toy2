@@ -1196,8 +1196,10 @@ class CUP$Parser$actions {
 		int exprListleft = ((java_cup.runtime.Symbol)CUP$Parser$stack.elementAt(CUP$Parser$top-1)).left;
 		int exprListright = ((java_cup.runtime.Symbol)CUP$Parser$stack.elementAt(CUP$Parser$top-1)).right;
 		LinkedList<Expr> exprList = (LinkedList<Expr>)((java_cup.runtime.Symbol) CUP$Parser$stack.elementAt(CUP$Parser$top-1)).value;
-		  if(idList.size()!=exprList.size())
-                                                        throw new Exception("Mismatch between the number of IDs and exprs detected.");
+		  //questo controllo facciamo in analisi semantica, altrimenti mi dà errore su
+                                                    //funzioni che hanno più valori di ritorno
+                                                    /*if(idList.size()!=exprList.size())
+                                                        throw new Exception("Mismatch between the number of IDs and exprs detected.");*/
                                                     RESULT = new AssignOp(idList, exprList);
                                                 
               CUP$Parser$result = parser.getSymbolFactory().newSymbol("Stat",21, ((java_cup.runtime.Symbol)CUP$Parser$stack.elementAt(CUP$Parser$top-3)), ((java_cup.runtime.Symbol)CUP$Parser$stack.peek()), RESULT);

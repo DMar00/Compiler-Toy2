@@ -1,15 +1,11 @@
 package main.utils;
 
-import main.exceptions.IdAlreadyDeclared;
-import main.exceptions.IdAlreadyDeclaredOtherType;
-import main.exceptions.ParamAlreadyDeclared;
 import main.syntaxtree.enums.Type;
-import main.syntaxtree.nodes.ProcFunParamOp;
+import main.syntaxtree.nodes.expr.Expr;
+import main.syntaxtree.nodes.expr.binExpr.*;
 import main.syntaxtree.nodes.expr.constNodes.*;
-import main.table.SymbolItemType;
-
-import java.util.ArrayList;
-import java.util.List;
+import main.syntaxtree.nodes.expr.unExpr.MinusOp;
+import main.syntaxtree.nodes.expr.unExpr.NotOp;
 
 public class Utils {
     public final static String rootNodeName = "Global";
@@ -19,6 +15,24 @@ public class Utils {
         else if(cn instanceof StringConstNode) return Type.STRING;
         else if(cn instanceof BoolConstNode) return Type.BOOLEAN;
         else return null;   //TODO exception ("A VAR declaration must have an assignment to a constant value!");
+    }
+
+    public static String ExprToSign(Expr e){
+        if(e instanceof AddOp) return "+";
+        if(e instanceof DiffOp) return "-";
+        if(e instanceof MulOp) return "*";
+        if(e instanceof DivOp) return "/";
+        if(e instanceof AndOp) return "&&";
+        if(e instanceof OrOp) return "||";
+        if(e instanceof MinusOp) return "-";
+        if(e instanceof NotOp) return "!";
+        if(e instanceof EqOp) return "=";
+        if(e instanceof NeOp) return "<>";
+        if(e instanceof LeOp) return "<=";
+        if(e instanceof LtOp) return "<";
+        if(e instanceof GeOp) return ">=";
+        if(e instanceof GtOp) return ">";
+        return null;
     }
 
 }

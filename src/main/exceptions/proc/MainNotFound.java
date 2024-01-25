@@ -1,4 +1,4 @@
-package main.exceptions;
+package main.exceptions.proc;
 
 public class MainNotFound extends RuntimeException{
     public MainNotFound() {

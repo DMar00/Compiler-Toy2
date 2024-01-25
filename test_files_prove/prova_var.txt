@@ -1,4 +1,13 @@
+
 proc main():
-     var a,b:integer;\
-     return a;
+
+    var a, b: integer;\
+
+    while a>1 do
+
+    endwhile;
+
+
 endproc
+
+

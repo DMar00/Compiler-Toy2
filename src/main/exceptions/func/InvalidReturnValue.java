@@ -1,4 +1,4 @@
-package main.exceptions;
+package main.exceptions.func;
 
 public class InvalidReturnValue  extends RuntimeException{
     public InvalidReturnValue() {

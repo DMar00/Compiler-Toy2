@@ -1,4 +1,4 @@
-package main.exceptions;
+package main.exceptions.proc_func;
 
 public class ParamAlreadyDeclared extends RuntimeException{
     public ParamAlreadyDeclared(String param, String id, String type) {

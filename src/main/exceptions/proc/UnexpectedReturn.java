@@ -1,4 +1,4 @@
-package main.exceptions;
+package main.exceptions.proc;
 
 public class UnexpectedReturn extends RuntimeException{
     public UnexpectedReturn(String name) {

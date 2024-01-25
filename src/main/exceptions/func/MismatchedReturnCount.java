@@ -1,4 +1,4 @@
-package main.exceptions;
+package main.exceptions.func;
 
 public class MismatchedReturnCount extends RuntimeException{
     public MismatchedReturnCount(String funcName, int nExpected, int nProvided) {

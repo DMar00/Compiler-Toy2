@@ -1,6 +1,11 @@
 package main.syntaxtree.visitor;
 
 import main.exceptions.*;
+import main.exceptions.func.InvalidReturnCountException;
+import main.exceptions.func.InvalidReturnValue;
+import main.exceptions.func.MismatchedReturnCount;
+import main.exceptions.proc.UnexpectedReturn;
+import main.exceptions.proc_func.ParamAlreadyDeclared;
 import main.syntaxtree.nodes.expr.unExpr.MinusOp;
 import main.syntaxtree.nodes.expr.unExpr.NotOp;
 import main.table.SymbolTable;
@@ -36,11 +41,24 @@ public class SemanticVisitorCreateTables implements Visitor {
         return activeSymbolTable;
     }
 
-    public void checkIdAlreadyDeclared(String idToFind, SymbolItemType type){
+    private void checkIdAlreadyDeclared(String idToFind, SymbolItemType type){
         SymbolItemType itemTypeFound = activeSymbolTable.lookup(idToFind).getItemType();
         if(itemTypeFound.name() != type.name())
             throw new IdAlreadyDeclaredOtherType(type.toString(), idToFind, itemTypeFound.toString());
         else throw new IdAlreadyDeclared(type.toString(), idToFind);
+    }
+
+    private int whileCount = 0, ifCount = 0, elifCount = 0, elseCount=0;
+    private String setProgressiveName(String basicName){
+        if(basicName.equals("while")){
+            whileCount++;
+            return basicName+"_"+whileCount;
+        } else if (basicName.equals("if")) {
+            ifCount++;
+            return basicName+"_"+ifCount;
+        }
+        //TODO continua
+        return null;
     }
 
     /*-------------------Interface methods---------------------*/
@@ -202,6 +220,7 @@ public class SemanticVisitorCreateTables implements Visitor {
             checkIdAlreadyDeclared(funcName, SymbolItemType.FUNCTION);
         }
 
+
         //controllo che si può fare già in ProcParam, dove lancio eccezione se già ci sta
         //controllo se ci sono paramentri con stesso id
         if(funParameters!=null && funParameters.size()>0){
@@ -216,31 +235,8 @@ public class SemanticVisitorCreateTables implements Visitor {
         }
 
         //controllo che i tipi di ritorno siano superiori ad 1
-        if(!(funReturnTypes.size()>1))
+        if(!(funReturnTypes.size()>=1))
             throw new InvalidReturnValue();
-
-        //controllo che ci sia il return
-        int i = 0;
-        for(Stat s : funDeclOp.functionBody.statList){
-            if (s instanceof ReturnOp){
-                i++;
-                ReturnOp returnOp = (ReturnOp) s;
-                if(returnOp.exprList.size()!= funReturnTypes.size())
-                    throw new MismatchedReturnCount(funcName, returnOp.exprList.size(), funReturnTypes.size());
-                //TODO va bene che devono essere stesso tipo ?
-                for(int j=0; j<funReturnTypes.size(); j++){
-                    //TODO come mi prendo tipo per returnOp.exprList.get(j).getNodeType()?
-                    /*if(!(funReturnTypes.get(j)==returnOp.exprList.get(j).getNodeType())){
-                        func ciao() -> integer, integer:
-                            return 5+5, 6+6;
-                        endfunc;
-                    }*/
-                }
-            }
-
-        }
-        if(!(i==1))
-            throw new InvalidReturnCountException(funcName);
 
 
         //aggiungo la funzione alla tabella dei simboli
@@ -259,6 +255,20 @@ public class SemanticVisitorCreateTables implements Visitor {
             }
         }
 
+        //controllo che ci sia il return
+        int i = 0;
+        for(Stat s : funDeclOp.functionBody.statList){
+            if (s instanceof ReturnOp) {
+                i++;
+                ReturnOp returnOp = (ReturnOp) s;
+                //controllo che il numero di valori restituiti coincide col numero di valori di ritorno dichiarati
+                if(returnOp.exprList.size() != funReturnTypes.size())
+                    throw new MismatchedReturnCount(funcName,funReturnTypes.size(), returnOp.exprList.size());
+            }
+        }
+        if(!(i==1))
+            throw new InvalidReturnCountException(funcName);
+
         //aggiungo come nodo figlio la nuova tabella funzione al padre
         activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
 
@@ -276,20 +286,29 @@ public class SemanticVisitorCreateTables implements Visitor {
         String idName = id.idName;
 
         SymbolItem found = activeSymbolTable.lookup(idName);
+        if(found == null)
+            throw new IdNotDeclared("Id", idName);
 
         id.setNodeType(found.getVarType());
         return null;
     }
 
     @Override
-    public Object visit(ReturnOp returnOp) {
-        for(Expr e: returnOp.exprList)
-            e.accept(this);
+    public Object visit(WhileOp whileOp) {
+        //crea tabella scoping per while
+        activeSymbolTable.enterScope(setProgressiveName("while"));
+
+        //aggiungo come nodo figlio la nuova tabella funzione al padre
+        activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
+
+        //visito corpo while
+        whileOp.doBody.accept(this);
+
+        //esco scope while
+        activeSymbolTable.exitScope();
+
         return null;
     }
-
-    /*---------------------------------------------------------*/
-
 
     @Override
     public Object visit(ElifOp elifOp) {
@@ -302,12 +321,15 @@ public class SemanticVisitorCreateTables implements Visitor {
     }
 
     @Override
-    public Object visit(WhileOp whileOp) {
+    public Object visit(IOArgsOp ioArgsOp) {
         return null;
     }
 
+    /*---------------------------------------------------------*/
+
+
     @Override
-    public Object visit(IOArgsOp ioArgsOp) {
+    public Object visit(ReturnOp returnOp) {
         return null;
     }
 

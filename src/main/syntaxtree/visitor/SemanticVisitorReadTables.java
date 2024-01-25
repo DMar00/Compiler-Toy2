@@ -1,6 +1,7 @@
 package main.syntaxtree.visitor;
 
 import main.exceptions.*;
+import main.exceptions.proc.MainNotFound;
 import main.syntaxtree.enums.Mode;
 import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.expr.unExpr.*;
@@ -51,6 +52,13 @@ public class SemanticVisitorReadTables implements Visitor {
         return itemFound;
     }
 
+    private SymbolItem findInSpecificScope(String scopeName, String idToFind){
+        SymbolTable copy = activeSymbolTable.clone();
+        copy.enterSpecificScope(scopeName);
+        SymbolItem found = copy.lookup(idToFind);
+        return found;
+    }
+
     private void checkMarkerTrue(){
         //controllo marker dichiarazioni
         //potrebbero esserci dei VAR n^= 5; non dichiarati col tipo
@@ -65,28 +73,66 @@ public class SemanticVisitorReadTables implements Visitor {
     }
 
     private Type visitBinaryExpr(BinaryExpr expr){
-        expr.rightNode.accept(this);
-        expr.leftNode.accept(this);
+        //controllo che le espressioni coinvolte non siano chiamate a funzioni che restituiscono valori multipli
+        Expr rightExpr = expr.rightNode;
+        Expr leftExpr = expr.leftNode;
+        if(rightExpr instanceof FunCallOp){
+            FunCallOp f = (FunCallOp) rightExpr;
+            checkIfFunctionReturnMoreValue(f);
+        }
+
+        if(leftExpr instanceof FunCallOp){
+            FunCallOp f = (FunCallOp) leftExpr;
+            checkIfFunctionReturnMoreValue(f);
+        }
+
+        //
+        rightExpr.accept(this);
+        leftExpr.accept(this);
 
         //controllo compatibilità tipi nell'espressione binaria
         Type type = CompType.getTypeFromBinaryExpr(expr);
-        if(type == null)
-            throw new InvalidTypeForBinaryExpr(expr.name, expr.leftNode.getNodeType(), expr.rightNode.getNodeType());
+        if(type == null){
+            String operator = Utils.ExprToSign(expr);
+            throw new InvalidTypeForBinaryExpr(operator, expr.leftNode.getNodeType(), expr.rightNode.getNodeType());
+        }
+
 
         return type;
     }
 
     private Type visitUnaryExpr(UnaryExpr expr){
-        expr.rightNode.accept(this);
+        //controllo che le espressioni coinvolte non siano chiamate a funzioni che restituiscono valori multipli
+        Expr rightExpr = expr.rightNode;
+        if(rightExpr instanceof FunCallOp){
+            FunCallOp f = (FunCallOp) rightExpr;
+            checkIfFunctionReturnMoreValue(f);
+        }
+
+        //
+        rightExpr.accept(this);
 
         //controllo tipi nell'espressione
         Type type = CompType.getTypeFromUnaryExpr(expr);
 
-        if(type == null)
-            throw new InvalidTypeForUnaryExpr(expr.name, expr.rightNode.getNodeType());
+        if(type == null){
+            String operator = Utils.ExprToSign(expr);
+            throw new InvalidTypeForUnaryExpr(operator, expr.rightNode.getNodeType());
+        }
+
 
         return type;
     }
+
+    private void checkIfFunctionReturnMoreValue(FunCallOp f){
+        SymbolItem s = findInSpecificScope(Utils.rootNodeName, f.funName.idName);
+        int retTypes = s.getReturnTypeList().size();
+        if(retTypes>1) {
+            //TODO migliora Eccezione
+            throw new RuntimeException("La funzione passata come param restituisce più valori!");
+        }
+    }
+
 
     /*-------------------Interface methods---------------------*/
     @Override
@@ -213,6 +259,27 @@ public class SemanticVisitorReadTables implements Visitor {
             }
 
         }
+
+        //TODO controllo in assegnazione che può essere effettuata solo se i parametri sono con Mode out
+        for(Id id : assignOp.idList){
+            //cerco nello scope globale (perchè lì procedure e funzioni sono definite)
+            //la proc o procedura corrente, e mi prendo i parametri
+            String activeNameScope = activeSymbolTable.getActiveTable().getNameScope();
+            SymbolItem s = findInSpecificScope(Utils.rootNodeName, activeNameScope);
+            List<ProcFunParamOp> params = s.getParams();
+            if(params!= null && params.size()>0){
+                for(ProcFunParamOp p : params){
+                    if(id.idName.equals(p.id.idName)){
+                        Mode mode = p.mode;
+                        if(!(mode == Mode.OUT))
+                            //TODO migliora eccezione
+                            throw new RuntimeException("Stai tentando di modificare un paramentro non passato per riferimenro");
+                    }
+                }
+            }
+        }
+
+
         return null;
     }
 
@@ -381,26 +448,27 @@ public class SemanticVisitorReadTables implements Visitor {
             }
         }
 
+
         int sizeParam = 0;
         int sizeParamFound = 0;
-        if(procParam != null) sizeParam = procParam.size();
+        if(procParam != null) {
+            //controllo che non ci siano come parametri chamate a funzioni con valori di ritorno multipli
+            for(ProcExpr pe : procParam){
+                Expr e = pe.expr;
+                if(e instanceof FunCallOp){
+                    FunCallOp f = (FunCallOp) e;
+                    checkIfFunctionReturnMoreValue(f);
+                }
+            }
+            sizeParam = procParam.size();
+        }
+
 
         //controllo in tab globale (solo lì sono definite procedure) se c'è una proc con nome procName
-        SymbolTable copy = activeSymbolTable.clone();
-        copy.enterSpecificScope(Utils.rootNodeName);
-        SymbolItem found = copy.lookup(procName);
+        SymbolItem found = findInSpecificScope(Utils.rootNodeName, procName);
 
         if(found != null && found.getItemType()==SymbolItemType.PROCEDURE){
-
             List<ProcFunParamOp> paramsFound = found.getParams();
-            /*for(ProcFunParamOp o : paramsFound)
-                System.out.println("param found: "+o.id.idName+" -->  "+o.getNodeType());*/
-
-            /*for(ProcExpr e : procParam){
-                Id kk = (Id)((Expr)e.expr);
-                System.out.println("param written: "+kk.idName+" -->  "+kk.getNodeType());
-            }*/
-
 
             if(paramsFound != null) sizeParamFound = paramsFound.size();
 
@@ -444,32 +512,108 @@ public class SemanticVisitorReadTables implements Visitor {
         return null;
     }
 
-    /*-------------------------------------------------*/
-
-
-
-    /*-------------------------------------------------*/
-
+    /*--------*/
     @Override
     public Object visit(FunDeclOp funDeclOp) {
-        return null;
-    }
+        String funcName = funDeclOp.functionName.idName;
+        List<ProcFunParamOp> funParameters = funDeclOp.functionParamList;
+        List<Type> funReturnTypes = funDeclOp.functionReturTypeList;
 
-    @Override
-    public Object visit(ProcFunParamOp procFunParamOp) {
-        return null;
-    }
+        //attivo tabella della func con nome funcName
+        activeSymbolTable.enterSpecificScope(funcName);
 
-    @Override
-    public Object visit(FunCallOp funCallOp) {
+        //in fase creazione tabella controllo che ci sia il return
+        //qui controllo ciò che viene restituito
+        for(Stat s : funDeclOp.functionBody.statList){
+            if (s instanceof ReturnOp){
+                ReturnOp returnOp = (ReturnOp) s;
+                returnOp.accept(this);
+
+                //controllo che valore/i restituito/i siano dello stesso tipo
+                List<Expr> returnedExpr = returnOp.exprList;
+                for(int j=0; j<funReturnTypes.size(); j++){
+                    if(!(funReturnTypes.get(j)==returnedExpr.get(j).getNodeType())){
+                        throw new RuntimeException("id non stesso tipo");
+                    }
+                }
+            }
+        }
+
+        //visito body per controlli
+        funDeclOp.functionBody.accept(this);
+
+        //ritorno in scope padre
+        activeSymbolTable.exitScope();
+
         return null;
     }
 
     @Override
     public Object visit(ReturnOp returnOp) {
+        for(Expr e: returnOp.exprList)
+            e.accept(this);
         return null;
     }
 
+    @Override
+    public Object visit(FunCallOp funCallOp) {
+        String funName = funCallOp.funName.idName;
+        List<Expr> funParams = funCallOp.exprList;
+
+        //visito ogni parametro
+        if(funParams != null && funParams.size()>0){
+            for(Expr e : funParams){
+                e.accept(this);
+            }
+        }
+
+        //controllo in tab globale (solo lì sono definite funzioni) se c'è una funz con nome funcName
+        SymbolItem found = findInSpecificScope(Utils.rootNodeName, funName);
+
+        //altri controlli
+        int sizeParam = 0;
+        int sizeParamFound = 0;
+        if(funParams != null) {
+            for(Expr e: funParams){
+                //in caso di somma(funcRet2Value())  e funcRet2Value() ritorna due valori
+                if(e instanceof FunCallOp){
+                    FunCallOp f = (FunCallOp) e;
+                    checkIfFunctionReturnMoreValue(f);
+                }
+            }
+            sizeParam = funParams.size();
+        }
+
+        if(found != null && found.getItemType()==SymbolItemType.FUNCTION){
+            List<ProcFunParamOp> paramsFound = found.getParams();
+            if(paramsFound != null) sizeParamFound = paramsFound.size();
+
+            //controllo che il numero di parametri nella chiamata sia corretto
+            if(funParams != null && paramsFound != null && (sizeParam == paramsFound.size())){
+
+                for(int i=0; i<paramsFound.size(); i++){
+                    String idProcParam;
+                    if(funParams.get(i) instanceof Id)
+                        idProcParam = ((Id)funParams.get(i)).idName;
+                    else
+                        idProcParam = "Expr";
+                    //controllo che i tipi coincidano
+                    if(! (funParams.get(i).getNodeType() == paramsFound.get(i).type))
+                        throw new InvalidParameterType(SymbolItemType.FUNCTION.toString(), funName, paramsFound.get(i).type.toString(), funParams.get(i).getNodeType().toString());
+                }
+            }else{
+                throw new MismatchedParameterCountCall(SymbolItemType.FUNCTION.toString(), funName, sizeParamFound, sizeParam);
+            }
+        }else{
+            throw new IdNotDeclared(SymbolItemType.FUNCTION.toString(), funName);
+        }
+        return null;
+    }
+
+    /*--------*/
+
+
+    /*-------------------------------------------------*/
     @Override
     public Object visit(ElifOp elifOp) {
         return null;
@@ -482,11 +626,34 @@ public class SemanticVisitorReadTables implements Visitor {
 
     @Override
     public Object visit(WhileOp whileOp) {
+        //entro scope while
+        //activeSymbolTable.enterSpecificScope();
+
+        //mi assicuro che espressione sia booleana, e la visito
+        whileOp.whileExpr.accept(this);
+        if(whileOp.whileExpr.getNodeType() != Type.BOOLEAN){
+            //TODO migliora eccezione
+            throw new RuntimeException("Il while vuole un boolean come espressione");
+        }
+
+        //visito body
+        whileOp.doBody.accept(this);
+
+        //esco scope while
+
         return null;
     }
 
     @Override
     public Object visit(IOArgsOp ioArgsOp) {
+        return null;
+    }
+
+
+    /*-------------------------------------------------*/
+
+    @Override
+    public Object visit(ProcFunParamOp procFunParamOp) {
         return null;
     }
 
