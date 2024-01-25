@@ -133,6 +133,14 @@ public class SemanticVisitorReadTables implements Visitor {
         }
     }
 
+    private int whileCount = 0, ifCount = 0, elifCount = 0, elseCount=0;
+    private String getProgressiveName(String basicName){
+        if(basicName.equals("while")){
+            return basicName+"_"+whileCount;
+        }
+        //TODO continua
+        return null;
+    }
 
     /*-------------------Interface methods---------------------*/
     @Override
@@ -194,6 +202,9 @@ public class SemanticVisitorReadTables implements Visitor {
     public Object visit(BodyOp bodyOp) {
         //controllo statements : AssignOp, ...
         for(Stat st: bodyOp.statList){
+            if(st instanceof WhileOp){
+                whileCount++;
+            }
             st.accept(this);
         }
 
