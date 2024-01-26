@@ -12,6 +12,7 @@ import main.syntaxtree.nodes.expr.unExpr.*;
 import main.syntaxtree.nodes.stat.*;
 import java.util.LinkedList;
 import java.util.HashMap;
+import main.syntaxtree.nodes.stat.IOArgsOp.IoExpr;
 
 /* terminals */
 terminal                REAL, INTEGER, STRING, BOOLEAN;
@@ -44,7 +45,8 @@ nonterminal     LinkedList<Type>                Types;
 nonterminal     ProcFunParamOp                  ProcParamId;
 nonterminal     LinkedList<ProcFunParamOp>      ProcParams, OtherProcParams, OtherFuncParams, FuncParams;
 
-nonterminal     BodyOp                          Body, Else;
+nonterminal     BodyOp                          Body;
+
 
 nonterminal     ConstNode                       Const;
 nonterminal     LinkedList<ConstNode>           Consts;
@@ -64,10 +66,11 @@ nonterminal     LinkedList<ProcExpr>            ProcExprs;
 nonterminal     ProcCallOp                      ProcCall;
 nonterminal     LinkedList<ElifOp>              Elifs;
 nonterminal     ElifOp                          Elif;
+nonterminal     ElseOp                          Else;
 nonterminal     IfOp                            IfStat;
 nonterminal     WhileOp                         WhileStat;
 nonterminal     FunCallOp                       FunCall;
-nonterminal     LinkedList<Expr>                IOArgs;
+nonterminal     LinkedList<IOArgsOp.IoExpr>              IOArgs;
 
 precedence left OR;
 precedence left AND;
@@ -300,17 +303,23 @@ Stat ::= Ids:idList ASSIGN Exprs:exprList SEMI  {:  //questo controllo facciamo 
 ;
 */
 
-IOArgs ::= Expr:e                                                   {:LinkedList<Expr> exprList = new LinkedList<Expr>();
+IOArgs ::= Expr:e                                                   {:/*LinkedList<Expr> exprList = new LinkedList<Expr>();
                                                                       exprList.add(0, e);
+                                                                      RESULT = exprList;*/
+                                                                      LinkedList<IOArgsOp.IoExpr> exprList = new LinkedList<>();
+                                                                      exprList.add(0, new IoExpr(e, false) );
                                                                       RESULT = exprList;
                                                                     :}
-           |Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:ioArgs      {:if(ioArgs == null) ioArgs = new LinkedList<Expr>();
-                                                                      ioArgs.add(0, e2);
-                                                                      ioArgs.add(0, e1);
+           |Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:ioArgs      {:if(ioArgs == null) ioArgs = new LinkedList<IOArgsOp.IoExpr>();
+                                                                      ioArgs.add(0, new IoExpr(e2,true));
+                                                                      //ioArgs.add(0, e2);
+                                                                      //ioArgs.add(0, e1);
+                                                                      ioArgs.add(0, new IoExpr(e1,false));
                                                                       RESULT = ioArgs;
                                                                     :}
-           |DOLLARSIGN LPAR Expr:e RPAR IOArgs:ioArgs               {:if(ioArgs == null) ioArgs = new LinkedList<Expr>();
-                                                                      ioArgs.add(0, e);
+           |DOLLARSIGN LPAR Expr:e RPAR IOArgs:ioArgs               {:if(ioArgs == null) ioArgs = new LinkedList<IOArgsOp.IoExpr>();
+                                                                      //ioArgs.add(0, e);
+                                                                      ioArgs.add(0, new IoExpr(e,true));
                                                                       RESULT = ioArgs;
                                                                      :}
            |/* empty */                                             {:RESULT = null;:}
@@ -335,6 +344,11 @@ ProcExprs::= Expr:expr COMMA ProcExprs:exprList     {:exprList.add(0, new ProcEx
 	                                                 :}
 ;
 
+
+
+
+
+
 IfStat ::= IF Expr:expr THEN Body:b Elifs:elifs Else:el ENDIF {:RESULT = new IfOp(expr, b, elifs, el);:}
 ;
 
@@ -348,9 +362,15 @@ Elifs ::= Elif:elif Elifs:elifs	                    {:if(elifs == null) elifs = 
 Elif ::= ELIF Expr:expr THEN Body:b                 {:RESULT = new ElifOp(expr, b);:}
 ;
 
-Else ::= ELSE Body:b                                {:RESULT = b;:}
+Else ::= ELSE Body:b                                {:/*RESULT = b;*/ RESULT = new ElseOp(b);:}
      | /* empty */                                  {:RESULT = null;:}
 ;
+
+
+
+
+
+
 
 WhileStat ::= WHILE Expr:expr DO Body:b ENDWHILE    {:RESULT = new WhileOp(expr, b);:}
 ;

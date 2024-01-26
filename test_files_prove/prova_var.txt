@@ -1,13 +1,11 @@
 
-proc main():
+var c^= 5;\
+proc main(out x: real):
 
-    var a, b: integer;\
-
-    while a>1 do
-
-    endwhile;
-
+        c^= 5 + ciao();
 
 endproc
 
-
+func ciao()->real:
+    return 1.0;
+endfunc

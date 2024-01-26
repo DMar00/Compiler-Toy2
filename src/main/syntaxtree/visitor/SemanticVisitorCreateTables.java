@@ -6,6 +6,7 @@ import main.exceptions.func.InvalidReturnValue;
 import main.exceptions.func.MismatchedReturnCount;
 import main.exceptions.proc.UnexpectedReturn;
 import main.exceptions.proc_func.ParamAlreadyDeclared;
+import main.syntaxtree.enums.Mode;
 import main.syntaxtree.nodes.expr.unExpr.MinusOp;
 import main.syntaxtree.nodes.expr.unExpr.NotOp;
 import main.table.SymbolTable;
@@ -56,8 +57,14 @@ public class SemanticVisitorCreateTables implements Visitor {
         } else if (basicName.equals("if")) {
             ifCount++;
             return basicName+"_"+ifCount;
+        } else if (basicName.equals("elif")) {
+            elifCount++;
+            return basicName+"_"+elifCount;
+        } else if (basicName.equals("else")) {
+            //System.out.println("c'è un else");
+            elseCount++;
+            return basicName+"_"+elseCount;
         }
-        //TODO continua
         return null;
     }
 
@@ -104,7 +111,7 @@ public class SemanticVisitorCreateTables implements Visitor {
                     Type constType = Utils.constToType(constNode);  //prendo il tipo specifico dalla superclasse ConstNode
                     item.setVarType(constType);
                     //TODO VAR n1^=5; la aggiungo alla tab?     per ora si
-                    item.setMarker(true);   //ancora non è stata trovata dichiarazione con tipo
+                    item.setMarker(false);   //ancora non è stata trovata dichiarazione con tipo
                 }
                 activeSymbolTable.addId(item);
             }else{
@@ -191,6 +198,8 @@ public class SemanticVisitorCreateTables implements Visitor {
         if(!activeSymbolTable.probe(id)){
             SymbolItem symbolItem = new SymbolItem(id, t);
             symbolItem.setMarker(false);
+            if(procFunParamOp.mode != Mode.OUT)
+                symbolItem.setParamOUT(false);
             activeSymbolTable.addId(symbolItem);
         }
 
@@ -311,14 +320,66 @@ public class SemanticVisitorCreateTables implements Visitor {
     }
 
     @Override
-    public Object visit(ElifOp elifOp) {
+    public Object visit(IfOp ifOp) {
+        //crea tabella scoping per if
+        activeSymbolTable.enterScope(setProgressiveName("if"));
+
+        //aggiungo come nodo figlio la nuova tabella funzione al padre
+        activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
+
+        //visito corpo if
+        ifOp.ifBody.accept(this);
+
+        //visito lista elifs se ci sono
+        List<ElifOp> elifList = ifOp.elifs;
+        if(elifList != null && elifList.size()>0){
+            for(ElifOp e : elifList){
+                e.accept(this);
+            }
+        }
+
+        //se c'è un else creo tab di scoping anche per else
+        if(ifOp.elseBody!=null)
+            ifOp.elseBody.accept(this);
+
+
+
+        //esco scope if
+        activeSymbolTable.exitScope();
+
         return null;
     }
 
     @Override
-    public Object visit(IfOp ifOp) {
+    public Object visit(ElseOp elseOp) {
+        activeSymbolTable.enterScope(setProgressiveName("else"));
+
+        activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
+
+        elseOp.elseBody.accept(this);
+
+        activeSymbolTable.exitScope();
         return null;
     }
+
+    @Override
+    public Object visit(ElifOp elifOp) {
+        //crea tabella scoping per if
+        activeSymbolTable.enterScope(setProgressiveName("elif"));
+
+        //aggiungo come nodo figlio la nuova tabella funzione al padre
+        activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());
+
+        //visito corpo elif
+        elifOp.bodyOp.accept(this);
+
+        //esco da scope elif
+        activeSymbolTable.exitScope();
+
+        return null;
+    }
+
+
 
     @Override
     public Object visit(IOArgsOp ioArgsOp) {

@@ -330,13 +330,26 @@ public class XMLVisitor implements Visitor{
     }
 
     @Override
+    public Object visit(ElseOp elseOp) {
+        Element tag = document.createElement(elseOp.name);
+        //body
+        tag.appendChild((Node) elseOp.elseBody.accept(this));
+        //
+        return tag;
+    }
+
+
+    @Override
     public Object visit(IOArgsOp ioArgsOp) {
         Element tag = document.createElement(ioArgsOp.name);
         //IO mode
         tag.appendChild(getIOModeTag(ioArgsOp.mode));
+
         //List expr
-        for(Expr e : ioArgsOp.exprList)
-            tag.appendChild((Node) e.accept(this));
+        for(IOArgsOp.IoExpr e : ioArgsOp.exprList){
+            tag.appendChild((Node) e.expression().accept(this));
+        }
+
         return tag;
     }
 

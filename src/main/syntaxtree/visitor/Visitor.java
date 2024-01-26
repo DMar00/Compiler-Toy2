@@ -52,6 +52,7 @@ public interface Visitor {
     Object visit(ReturnOp returnOp);
     Object visit(ElifOp elifOp);
     Object visit(IfOp ifOp);
+    Object visit(ElseOp elseOp);
     Object visit(WhileOp whileOp);
     Object visit(IOArgsOp ioArgsOp);
     Object visit(ConstNode constNode);

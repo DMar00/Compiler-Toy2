@@ -11,8 +11,10 @@ public class IfOp extends Node implements Stat{
     public Expr expr;
     public BodyOp ifBody;
     public List<ElifOp> elifs;
-    public BodyOp elseBody;
-    public IfOp(Expr expr, BodyOp ifBody, List<ElifOp> elifs, BodyOp elseBody) {
+    //public BodyOp elseBody;
+    public ElseOp elseBody;
+
+    public IfOp(Expr expr, BodyOp ifBody, List<ElifOp> elifs, ElseOp elseBody) {
         super("IfOp");
         this.expr = expr;
         this.ifBody = ifBody;

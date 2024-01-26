@@ -7,7 +7,7 @@ import java.util.List;
 
 //costituisce l'insieme dei valori presenti in una riga di una tabella
 public class SymbolItem {
-    private SymbolItemType itemType;    //function or variable
+    private SymbolItemType itemType;    //function, procedure or variable
     private String id;
     //variables
     private Type varType;
@@ -17,9 +17,11 @@ public class SymbolItem {
     private boolean hasReturnType;
     //Marker
     private boolean marker;
+    private boolean isParamOUT; //di default è true, quando poi in una proc o func è un param non OUT si setta a false;
 
     public SymbolItem() {
         this.marker = true;
+        this.isParamOUT = true;
     }
 
     //costruttore per variabili
@@ -31,6 +33,7 @@ public class SymbolItem {
         this.returnTypeList = null;
         this.hasReturnType = false;
         this.marker = true;
+        this.isParamOUT = true;
     }
 
     //costruttore per funzioni
@@ -109,6 +112,14 @@ public class SymbolItem {
 
     public void setMarker(boolean marker) {
         this.marker = marker;
+    }
+
+    public boolean isParamOUT() {
+        return isParamOUT;
+    }
+
+    public void setParamOUT(boolean paramOUT) {
+        isParamOUT = paramOUT;
     }
 
     @Override
