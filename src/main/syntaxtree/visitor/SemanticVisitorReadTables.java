@@ -85,6 +85,8 @@ public class SemanticVisitorReadTables implements Visitor {
             checkIfFunctionReturnMoreValue(f);
         }
 
+
+        //
         if(leftExpr instanceof FunCallOp){
             FunCallOp f = (FunCallOp) leftExpr;
             checkIfFunctionReturnMoreValue(f);
@@ -93,6 +95,25 @@ public class SemanticVisitorReadTables implements Visitor {
         //
         rightExpr.accept(this);
         leftExpr.accept(this);
+
+        //controllo che se un'espressione è un ID deve essere un id di variabile
+        if(rightExpr instanceof Id){
+            Id id = (Id) rightExpr;
+            SymbolItem s = activeSymbolTable.lookup(id.idName);
+            if(s.getItemType()!=SymbolItemType.VARIABLE){
+                //TODO fai bene eccezione
+                throw new RuntimeException(id.idName+" non è id di variabile");
+            }
+        }
+
+        if(leftExpr instanceof Id){
+            Id id = (Id) leftExpr;
+            SymbolItem s = activeSymbolTable.lookup(id.idName);
+            if(s.getItemType()!=SymbolItemType.VARIABLE){
+                //TODO fai bene eccezione
+                throw new RuntimeException(id.idName+" non è id di variabile");
+            }
+        }
 
         //controllo compatibilità tipi nell'espressione binaria
         Type type = CompType.getTypeFromBinaryExpr(expr);
@@ -473,6 +494,17 @@ public class SemanticVisitorReadTables implements Visitor {
         if(procParam != null && procParam.size()>0){
             for(ProcExpr e : procParam){
                 e.accept(this);
+
+                //TODO fare metodo generale?
+                //verifico che se l'espressione è un id , deve essere un'id di variabile
+                if(e.expr instanceof Id){
+                    Id id = (Id) e.expr;
+                    SymbolItem s = activeSymbolTable.lookup(id.idName);
+                    if(s.getItemType()!=SymbolItemType.VARIABLE){
+                        //TODO fai bene eccezione
+                        throw new RuntimeException(id.idName+" non è id di variabile");
+                    }
+                }
             }
         }
 
@@ -592,6 +624,17 @@ public class SemanticVisitorReadTables implements Visitor {
         if(funParams != null && funParams.size()>0){
             for(Expr e : funParams){
                 e.accept(this);
+
+                //TODO fare metodo generale?
+                //verifico che se l'espressione è un id , deve essere un'id di variabile
+                if(e instanceof Id){
+                    Id id = (Id) e;
+                    SymbolItem s = activeSymbolTable.lookup(id.idName);
+                    if(s.getItemType()!=SymbolItemType.VARIABLE){
+                        //TODO fai bene eccezione
+                        throw new RuntimeException(id.idName+" non è id di variabile");
+                    }
+                }
             }
         }
 

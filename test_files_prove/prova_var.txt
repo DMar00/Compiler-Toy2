@@ -2,10 +2,15 @@
 var c^= 5;\
 proc main(out x: real):
 
-        c^= 5 + ciao();
+        c^= 5 + ciao(45);
+        miao(45463);
 
 endproc
 
-func ciao()->real:
-    return 1.0;
+func ciao(x : integer)->integer:
+    return 1;
 endfunc
+
+proc miao (x : integer):
+
+endproc
