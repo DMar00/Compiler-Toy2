@@ -1,78 +1,56 @@
-package main.syntaxtree.visitor;
+package main.syntaxtree.visitor.semanticVisitor;
 
 import main.exceptions.*;
+import main.exceptions.assign.MismatchedParameterCount;
+import main.exceptions.assing_expr.InvalidVariableId;
+import main.exceptions.func.InvalidReturnCountException;
+import main.exceptions.func.InvalidReturnValue;
+import main.exceptions.if_elif_while.NonBooleanExpression;
+import main.exceptions.io.Invalid_IO_Id;
 import main.exceptions.proc.MainNotFound;
+import main.exceptions.proc.UnexpectedReturn;
 import main.syntaxtree.enums.IOMode;
 import main.syntaxtree.enums.Mode;
 import main.syntaxtree.enums.Type;
-import main.syntaxtree.nodes.expr.unExpr.*;
-import main.table.*;
-import main.syntaxtree.nodes.*;
-import main.syntaxtree.nodes.expr.*;
+import main.syntaxtree.nodes.BodyOp;
+import main.syntaxtree.nodes.Node;
+import main.syntaxtree.nodes.ProcFunParamOp;
+import main.syntaxtree.nodes.ProgramOp;
+import main.syntaxtree.nodes.expr.Expr;
+import main.syntaxtree.nodes.expr.FunCallOp;
+import main.syntaxtree.nodes.expr.Id;
+import main.syntaxtree.nodes.expr.ProcExpr;
 import main.syntaxtree.nodes.expr.binExpr.*;
 import main.syntaxtree.nodes.expr.constNodes.*;
-import main.syntaxtree.nodes.iter.*;
+import main.syntaxtree.nodes.expr.unExpr.MinusOp;
+import main.syntaxtree.nodes.expr.unExpr.NotOp;
+import main.syntaxtree.nodes.expr.unExpr.UnaryExpr;
+import main.syntaxtree.nodes.iter.FunDeclOp;
+import main.syntaxtree.nodes.iter.IterOp;
+import main.syntaxtree.nodes.iter.ProcOp;
+import main.syntaxtree.nodes.iter.VarDeclOp;
 import main.syntaxtree.nodes.stat.*;
+import main.syntaxtree.visitor.Visitor;
+import main.table.SymbolItem;
+import main.table.SymbolItemType;
+import main.table.SymbolNode;
+import main.table.SymbolTable;
 import main.typecheck.CompType;
 import main.utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class SemanticVisitorReadTables implements Visitor {
-    private SymbolTable activeSymbolTable;
-
-    //TODO nelle espressioni l'id deve essere identificatore di variabile (non di altro)
-    //TODO vedi bene il tipo dei nodi che esce fuori dall'AST con le specifiche
-
-    public SemanticVisitorReadTables(SymbolTable symbolTableRoot) {
+public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implements Visitor {
+    public SemanticVisitorSecondVisit(SymbolTable symbolTableRoot) {
         this.activeSymbolTable = symbolTableRoot;
+        resetVariablesCount();  //TODO necessario ?
     }
 
-    private SymbolItem findInOtherScope(String idToFind){
-        //copio tabella e ricerco su copia
-        SymbolTable copyTableNode = activeSymbolTable.clone();
-
-        //ciclo sugli scope fin quando non arrico alla radice
-        boolean found = false;
-        SymbolItem itemFound = new SymbolItem();
-        while (copyTableNode.getActiveTable().getParent()!=null){
-            //controllo in scope padre
-            copyTableNode.exitScopeNull();
-            //System.out.println("controllo in padre: "+copyTableNode.getActiveTable().getNameScope());
-            //se trovo metto found = true ed esco
-            if(copyTableNode.probe(idToFind)){
-                found = true;
-                itemFound = copyTableNode.lookup(idToFind);
-                break;
-            }
-        }
-
-        if(!found){
-            //TODO invece di "id" come faccio a dire se variabile, nome di func  etc...
-            throw new IdNotDeclared("Id", idToFind);
-        }
-
-        return itemFound;
-    }
-
-    private SymbolItem findInSpecificScope(String scopeName, String idToFind){
-        SymbolTable copy = activeSymbolTable.clone();
-        copy.enterSpecificScope(scopeName);
-        SymbolItem found = copy.lookup(idToFind);
-        return found;
-    }
-
-    private void checkMarkerTrue(){
-        //controllo marker dichiarazioni
-        //potrebbero esserci dei VAR n^= 5; non dichiarati col tipo
-        SymbolNode node = activeSymbolTable.getActiveTable();
-        for (Map.Entry<String, SymbolItem> entry : node.entrySet()) {
-            //controllo se ci sono marker = true
-            String id = entry.getKey();
-            SymbolItem values = entry.getValue();
-            if(values.isMarker())   //se ci sono lancio eccezione
-                throw new IdNotDeclared(values.getItemType().toString(),id);
+    private void checkIfVariableId(Expr e){
+        Id id = (Id) e;
+        if(!(id.getIdItemType() == SymbolItemType.VARIABLE)){
+            throw new InvalidVariableId(id.idName, id.getIdItemType().toString());
         }
     }
 
@@ -80,13 +58,11 @@ public class SemanticVisitorReadTables implements Visitor {
         //controllo che le espressioni coinvolte non siano chiamate a funzioni che restituiscono valori multipli
         Expr rightExpr = expr.rightNode;
         Expr leftExpr = expr.leftNode;
+
         if(rightExpr instanceof FunCallOp){
             FunCallOp f = (FunCallOp) rightExpr;
             checkIfFunctionReturnMoreValue(f);
         }
-
-
-        //
         if(leftExpr instanceof FunCallOp){
             FunCallOp f = (FunCallOp) leftExpr;
             checkIfFunctionReturnMoreValue(f);
@@ -98,21 +74,10 @@ public class SemanticVisitorReadTables implements Visitor {
 
         //controllo che se un'espressione è un ID deve essere un id di variabile
         if(rightExpr instanceof Id){
-            Id id = (Id) rightExpr;
-            SymbolItem s = activeSymbolTable.lookup(id.idName);
-            if(s.getItemType()!=SymbolItemType.VARIABLE){
-                //TODO fai bene eccezione
-                throw new RuntimeException(id.idName+" non è id di variabile");
-            }
+            checkIfVariableId(rightExpr);
         }
-
         if(leftExpr instanceof Id){
-            Id id = (Id) leftExpr;
-            SymbolItem s = activeSymbolTable.lookup(id.idName);
-            if(s.getItemType()!=SymbolItemType.VARIABLE){
-                //TODO fai bene eccezione
-                throw new RuntimeException(id.idName+" non è id di variabile");
-            }
+            checkIfVariableId(leftExpr);
         }
 
         //controllo compatibilità tipi nell'espressione binaria
@@ -121,7 +86,6 @@ public class SemanticVisitorReadTables implements Visitor {
             String operator = Utils.ExprToSign(expr);
             throw new InvalidTypeForBinaryExpr(operator, expr.leftNode.getNodeType(), expr.rightNode.getNodeType());
         }
-
 
         return type;
     }
@@ -137,54 +101,33 @@ public class SemanticVisitorReadTables implements Visitor {
         //
         rightExpr.accept(this);
 
-        //controllo tipi nell'espressione
-        Type type = CompType.getTypeFromUnaryExpr(expr);
+        //controllo che se un'espressione è un ID deve essere un id di variabile
+        if(rightExpr instanceof Id){
+            checkIfVariableId(rightExpr);
+        }
 
+        //controllo compatibilità tipi nell'espressione binaria
+        Type type = CompType.getTypeFromUnaryExpr(expr);
         if(type == null){
             String operator = Utils.ExprToSign(expr);
             throw new InvalidTypeForUnaryExpr(operator, expr.rightNode.getNodeType());
         }
 
-
         return type;
     }
 
-    private void checkIfFunctionReturnMoreValue(FunCallOp f){
-        SymbolItem s = findInSpecificScope(Utils.rootNodeName, f.funName.idName);
-        int retTypes = s.getReturnTypeList().size();
-        if(retTypes>1) {
-            //TODO migliora Eccezione
-            throw new RuntimeException("La funzione passata come param restituisce più valori!");
-        }
-    }
+    /*----------------------------------------------------------------------------------------*/
+    //TODO nelle espressioni l'id deve essere identificatore di variabile (non di altro)
+    //TODO vedi bene il tipo dei nodi che esce fuori dall'AST con le specifiche
 
-    private int whileCount = 0, ifCount = 0, elifCount = 0, elseCount=0;
-    private String getProgressiveName(String basicName){
-        if(basicName.equals("while")){
-            return basicName+"_"+whileCount;
-        }else if (basicName.equals("if")){
-            return basicName+"_"+ifCount;
-        }else if(basicName.equals("elif")){
-            return basicName+"_"+elifCount;
-        }else if (basicName.equals("else")){
-            return basicName+"_"+elseCount;
-        }
-        return null;
-    }
-
-    /*-------------------Interface methods---------------------*/
     @Override
     public Object visit(ProgramOp programOp) {
-        //controllo marker dichiarazioni in tabella scope corrente
-        checkMarkerTrue();
-
-        //controllo che ci sia main
+        //controllo presenza del main
         SymbolNode node = activeSymbolTable.getActiveTable();
         boolean mainFound = false;
         for (Map.Entry<String, SymbolItem> entry : node.entrySet()) {
             String id = entry.getKey();
             SymbolItem values = entry.getValue();
-            //TODO il main può avere parametri ? controlla specifica
             if(id.equals("main") && (values.getItemType() == SymbolItemType.PROCEDURE)){
                 mainFound = true;
                 break;
@@ -206,49 +149,51 @@ public class SemanticVisitorReadTables implements Visitor {
 
         //TODO delete print
         System.out.println("Visita 2°\n"+activeSymbolTable);
-
-        return null;
-    }
-
-    @Override
-    public Object visit(ProcOp procOp) {
-        String procName = procOp.procName.idName;
-
-        //attivo tabella della proc con nome procName
-        activeSymbolTable.enterSpecificScope(procName);
-
-        //controllo marker dichiarazioni in tabella scope corrente
-        checkMarkerTrue();
-
-        //visito body per controlli
-        procOp.procBody.accept(this);
-
-        //ritorno in scope padre
-        activeSymbolTable.exitScope();
         return null;
     }
 
     @Override
     public Object visit(BodyOp bodyOp) {
-        //controllo statements : AssignOp, ...
+        //contatore return -> non ci può essere più di un return in un corpo
+        int returnCount = 0;
 
+        //variabile booleana che mi dice se negli if-elsif-else o while sono completi di return
+        boolean statReturn = false;
+
+        //controllo statements : AssignOp, ...
         for(Stat st: bodyOp.statList){
-            //System.out.println("bodyOp: "+st.getClass());
-            if(st instanceof WhileOp){
-                //System.out.println("Incrememto while");
-                whileCount++;
-            }else if(st instanceof IfOp){
-                System.out.println("Incrememto if");
-                ifCount++;
-            }/*else if(st instanceof ElifOp){
-                //System.out.println("Incrememto elif");
-                //elifCount++;
-            }else if(st instanceof ElseOp){
-                //System.out.println("Incrememto else");
-                //elseCount++;
-            }*/
+            ((Node)st).setFunProcName(bodyOp.getFunProcName());
             st.accept(this);
+
+            if(st instanceof ReturnOp){
+                returnCount ++;
+                if(returnCount > 1){
+                    //TODO migliora eccezione
+                    throw new RuntimeException("C'è più di un return");
+                }
+                bodyOp.setNodeTypes( ((Node)st).getNodeTypes() ) ;
+                statReturn = true;
+            }
+
+            if(st instanceof IfOp ){
+                boolean r = ((Node)st).isHasReturnTypes();
+                if(r)
+                    statReturn=true;
+            }
+
         }
+
+        bodyOp.setHasReturnTypes(statReturn);
+        return null;
+    }
+
+    @Override
+    public Object visit(Id id) {
+        SymbolItem found = findInParentsScopes(id.idName);
+
+        id.setOut(found.isParamOUT());
+        id.setNodeType(found.getVarType());
+        id.setIdItemType(found.getItemType());
         return null;
     }
 
@@ -256,28 +201,41 @@ public class SemanticVisitorReadTables implements Visitor {
     public Object visit(AssignOp assignOp) {
         for (Id id : assignOp.idList){
             id.accept(this);
+
+            //se non è id di variabile
+            checkIfVariableId(id);
+
+            //TODO non deve essere lanciata eccezione, semplicemente nella
+            // generazione del c un'operazione del genere non deve produrre output
+            /*if(!id.getOut()){   //se id non è modificabile
+                throw new VariableNotPassedByReference(id.idName);
+            }*/
         }
 
+        List<Type> exprsType= new ArrayList<>();  //lista tipi exprs a destra
         for (Expr e: assignOp.exprList){
+            //visito espressione
             e.accept(this);
+
+            //se non è id di variabile
+            if(e instanceof Id)
+                checkIfVariableId(e);
+
+            //riempio exprDX
+            if( e instanceof FunCallOp){
+                FunCallOp f = (FunCallOp) e;
+                String funName = f.funName.idName;
+                //trovo funName in tabella globale
+                SymbolItem funFound = findInSpecificScope(Utils.rootNodeName, funName);
+                //prendo tipi di ritorno e li metto in exprDX
+                for(Type t: funFound.getReturnTypeList()){
+                    exprsType.add(t);
+                }
+            }else{  //n1 ^= 5+3-1;  ||  n1, ... ^= n4, ...;
+                exprsType.add(e.getNodeType());
+            }
         }
 
-        //controllo in assegnazione che può essere effettuata solo se i parametri sono con Mode out
-        for(Id id : assignOp.idList){   //id a sinistra del ^=
-            String nameIdToCheck = id.idName;
-
-            SymbolItem found;
-            if(activeSymbolTable.probe(nameIdToCheck)){
-                found = activeSymbolTable.lookup(nameIdToCheck);
-            }else{
-                found = findInOtherScope(nameIdToCheck);
-            }
-
-            if (!found.isParamOUT()){
-                //TODO migliora eccezione
-                throw new RuntimeException("Stai tentando di modificare un paramentro non passato per riferimenro");
-            }
-        }
 
         //CONTROLLO tipi e numero di variabili/funCall per le assegnazioni
         //n1 ^= n6;
@@ -286,204 +244,51 @@ public class SemanticVisitorReadTables implements Visitor {
         int numIds = assignOp.idList.size();
         int numExpr = assignOp.exprList.size();
         //se il numero di parametri a destra è superiore al numero di parametri a sinistra, eccezione
-        if(numExpr > numIds){
-            throw new MismatchedParameterCount();
-        }else{
-            List<Id> idsSX = assignOp.idList;
-            List<Type> exprDX = new ArrayList<>();
+        if(numExpr > numIds) {
+            //TODO elimian parametro eccezione
+            throw new MismatchedParameterCount("");
+        }else{ //id <= expr
+            List<Id> idsSX = assignOp.idList;   //lista id a sinistra
+            List<Type> exprDX = exprsType;  //lista exprs a destra
 
-            for(Expr e: assignOp.exprList){ //fun()->3,5    :   exprDX[int, int]
-                if( e instanceof FunCallOp){
-                    FunCallOp f = (FunCallOp) e;
-                    String funName = f.funName.idName;
-                    //trovo funName in tabella globale
-                    SymbolTable copy = activeSymbolTable.clone();
-                    copy.enterSpecificScope(Utils.rootNodeName);
-                    SymbolItem funFound = copy.lookup(funName);
-                    //prendo tipi di ritorno e li metto in exprDX
-                    for(Type t: funFound.getReturnTypeList()){
-                        exprDX.add(t);
-                    }
-                }else{  //n1 ^= 5+3-1;  ||  n1, ... ^= n4, ...;
-                    Type t = e.getNodeType();
-                    boolean isId = e instanceof Id;
-                    //System.out.println("E' un id? "+isId+"..:"+t);
-                    exprDX.add(t);
-                }
-            }
+            //System.out.println("id size: "+idsSX.size()+" - exprs size: "+exprDX.size());
 
             //se le size delle due liste coincidono, allora abbiamo un numero
             //di parametri giusto per l'assegnazione, quindi possiamo controllare i tipi
-            if(idsSX.size() == exprDX.size()){
+            if(exprDX!=null && (idsSX.size() == exprDX.size())){
                 for(int i = 0 ; i<idsSX.size(); i++){
                     //L'assegnazione è possibile solo tra tipi uguali
                     if(idsSX.get(i).getNodeType() != exprDX.get(i)){
-                        //System.out.println("id: "+idsSX.get(i).getNodeType()+", e: "+exprDX.get(i));
                         throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
                     }
 
                 }
             }else {
-                throw new MismatchedParameterCount();
+                //TODO elimian parametro eccezione
+                throw new MismatchedParameterCount("");
             }
-
         }
 
         return null;
     }
 
-    @Override
-    public Object visit(Id id) {
-        //es ho n1 ^= n3;
-        String idName = id.idName;
-
-        //se nella tabella corrente non è stato dichiarato, quindi non è presente
-        //controllo negli scope precedenti che sia dichiarato
-        SymbolItem found;
-        if(!activeSymbolTable.probe(idName)){
-            found = findInOtherScope(idName);
-        }else{
-            found = activeSymbolTable.lookup(idName);
-        }
-
-        id.setNodeType(found.getVarType());
-
-        return null;
-    }
-
-    /*--------*/
+    /*-------------*/
 
     @Override
-    public Object visit(AddOp addOp) {
-        Type t = visitBinaryExpr(addOp);
-        addOp.setNodeType(t);
+    public Object visit(ProcOp procOp) {
+        String procName = procOp.procName.idName;
+
+        //attivo tabella della proc con nome procName
+        activeSymbolTable.enterSpecificScope(procName);
+
+        //visito body per controlli
+        procOp.procBody.setFunProcName(procName);
+        procOp.procBody.accept(this);
+
+        //ritorno in scope padre
+        activeSymbolTable.exitScope();
         return null;
     }
-
-    @Override
-    public Object visit(DiffOp diffOp) {
-        Type t = visitBinaryExpr(diffOp);
-        diffOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(DivOp divOp) {
-        Type t = visitBinaryExpr(divOp);
-        divOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(MulOp mulOp) {
-        Type t = visitBinaryExpr(mulOp);
-        mulOp.setNodeType(t);
-        return null;
-    }
-
-    /*--------*/
-
-    @Override
-    public Object visit(IntConstNode constNode) {
-        constNode.setNodeType(Type.INTEGER);
-        return null;
-    }
-
-    @Override
-    public Object visit(RealConstNode constNode) {
-        constNode.setNodeType(Type.REAL);
-        return null;
-    }
-
-    @Override
-    public Object visit(StringConstNode constNode) {
-        constNode.setNodeType(Type.STRING);
-        return null;
-    }
-
-    @Override
-    public Object visit(BoolConstNode constNode) {
-        constNode.setNodeType(Type.BOOLEAN);
-        return null;
-    }
-
-    /*--------*/
-
-    @Override
-    public Object visit(AndOp andOp) {
-        Type t = visitBinaryExpr(andOp);
-        andOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(OrOp orOp) {
-        Type t = visitBinaryExpr(orOp);
-        orOp.setNodeType(t);
-        return null;
-    }
-
-    /*--------*/
-
-    @Override
-    public Object visit(EqOp eqOp) {
-        Type t = visitBinaryExpr(eqOp);
-        eqOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(GeOp geOp) {
-        Type t = visitBinaryExpr(geOp);
-        geOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(GtOp gtOp) {
-        Type t = visitBinaryExpr(gtOp);
-        gtOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(LeOp leOp) {
-        Type t = visitBinaryExpr(leOp);
-        leOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(LtOp ltOp) {
-        Type t = visitBinaryExpr(ltOp);
-        ltOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(NeOp neOp) {
-        Type t = visitBinaryExpr(neOp);
-        neOp.setNodeType(t);
-        return null;
-    }
-
-    /*--------*/
-
-    @Override
-    public Object visit(MinusOp minusOp) {
-        Type t = visitUnaryExpr(minusOp);
-        minusOp.setNodeType(t);
-        return null;
-    }
-
-    @Override
-    public Object visit(NotOp notOp) {
-        Type t = visitUnaryExpr(notOp);
-        notOp.setNodeType(t);
-        return null;
-    }
-
-    /*--------*/
 
     @Override
     public Object visit(ProcCallOp procCallOp) {
@@ -495,15 +300,9 @@ public class SemanticVisitorReadTables implements Visitor {
             for(ProcExpr e : procParam){
                 e.accept(this);
 
-                //TODO fare metodo generale?
                 //verifico che se l'espressione è un id , deve essere un'id di variabile
                 if(e.expr instanceof Id){
-                    Id id = (Id) e.expr;
-                    SymbolItem s = activeSymbolTable.lookup(id.idName);
-                    if(s.getItemType()!=SymbolItemType.VARIABLE){
-                        //TODO fai bene eccezione
-                        throw new RuntimeException(id.idName+" non è id di variabile");
-                    }
+                    checkIfVariableId(e.expr);
                 }
             }
         }
@@ -572,46 +371,29 @@ public class SemanticVisitorReadTables implements Visitor {
         return null;
     }
 
-    /*--------*/
+    /*-------------*/
+
     @Override
     public Object visit(FunDeclOp funDeclOp) {
         String funcName = funDeclOp.functionName.idName;
-        List<ProcFunParamOp> funParameters = funDeclOp.functionParamList;
-        List<Type> funReturnTypes = funDeclOp.functionReturTypeList;
+        List<ProcFunParamOp> funcParameters = funDeclOp.functionParamList;
+        List<Type> funcReturnTypes = funDeclOp.functionReturTypeList;
+        BodyOp funcBody = funDeclOp.functionBody;
 
         //attivo tabella della func con nome funcName
         activeSymbolTable.enterSpecificScope(funcName);
 
-        //in fase creazione tabella controllo che ci sia il return
-        //qui controllo ciò che viene restituito
-        for(Stat s : funDeclOp.functionBody.statList){
-            if (s instanceof ReturnOp){
-                ReturnOp returnOp = (ReturnOp) s;
-                returnOp.accept(this);
+        //visito body, per ottenere anche tipo e controllare che quindi ci sia il return giusto
+        funcBody.setFunProcName(funcName);
+        funcBody.accept(this);
+        if(!funcBody.isHasReturnTypes())
+            //TODO migliora eccezione
+            throw new RuntimeException("Missing return in all branch");
 
-                //controllo che valore/i restituito/i siano dello stesso tipo
-                List<Expr> returnedExpr = returnOp.exprList;
-                for(int j=0; j<funReturnTypes.size(); j++){
-                    if(!(funReturnTypes.get(j)==returnedExpr.get(j).getNodeType())){
-                        throw new RuntimeException("id non stesso tipo");
-                    }
-                }
-            }
-        }
-
-        //visito body per controlli
-        funDeclOp.functionBody.accept(this);
 
         //ritorno in scope padre
         activeSymbolTable.exitScope();
 
-        return null;
-    }
-
-    @Override
-    public Object visit(ReturnOp returnOp) {
-        for(Expr e: returnOp.exprList)
-            e.accept(this);
         return null;
     }
 
@@ -628,12 +410,13 @@ public class SemanticVisitorReadTables implements Visitor {
                 //TODO fare metodo generale?
                 //verifico che se l'espressione è un id , deve essere un'id di variabile
                 if(e instanceof Id){
-                    Id id = (Id) e;
+                    checkIfVariableId(e);
+                    /*Id id = (Id) e;
                     SymbolItem s = activeSymbolTable.lookup(id.idName);
                     if(s.getItemType()!=SymbolItemType.VARIABLE){
                         //TODO fai bene eccezione
                         throw new RuntimeException(id.idName+" non è id di variabile");
-                    }
+                    }*/
                 }
             }
         }
@@ -688,21 +471,58 @@ public class SemanticVisitorReadTables implements Visitor {
         return null;
     }
 
-    /*--------*/
+    @Override
+    public Object visit(ReturnOp returnOp) {
+        List<Type> exprTypes = new ArrayList<>();
+        for(Expr e: returnOp.exprList){
+            e.accept(this);
+            exprTypes.add(e.getNodeType());
+        }
+
+        String returnProcFun = returnOp.getFunProcName();
+        //System.out.println(returnProcFun);
+        SymbolItem found = activeSymbolTable.lookup(returnProcFun);
+        if(found.getItemType() == SymbolItemType.PROCEDURE)
+            throw new UnexpectedReturn(returnOp.getFunProcName());
+
+        //se è una funzione, per ogni return trovato verifico che i tipi siano uguali e il numero sia corretto
+        if(found.getItemType() == SymbolItemType.FUNCTION){
+            List<Type> returnTypeFound = found.getReturnTypeList();
+            if(exprTypes.size()!=returnTypeFound.size())
+                //TODO migliora eccezione
+                throw new RuntimeException("Il numero di valori restituiti non è conforme");
+            else{
+                for(int i=0 ; i<returnTypeFound.size(); i++){
+                    if(exprTypes.get(i) != returnTypeFound.get(i))  //TODO tipi uguali o compatibili?
+                        //TODO migliora eccezione
+                        throw new RuntimeException("id restituito non stesso tipo");
+                }
+            }
+
+            ////////PER IL TIPO
+            returnOp.setNodeTypes(exprTypes);
+        }
+
+        return null;
+    }
+
+    /*-------------*/
+
     @Override
     public Object visit(ElifOp elifOp) {
         //entro scope if
-        activeSymbolTable.enterSpecificScope(getProgressiveName("elif"));
+        activeSymbolTable.enterSpecificScope(setProgressiveName("elif"));
 
         //mi assicuro che espressione sia booleana, e la visito
         elifOp.expr.accept(this);
         if(elifOp.expr.getNodeType() != Type.BOOLEAN){
-            //TODO migliora eccezione
-            throw new RuntimeException("l'elif vuole un boolean come espressione");
+            throw new NonBooleanExpression("elif");
         }
 
         //visito body
+        elifOp.bodyOp.setFunProcName(elifOp.getFunProcName());
         elifOp.bodyOp.accept(this);
+        elifOp.setNodeTypes(elifOp.bodyOp.getNodeTypes());
 
         //esco scope elif
         activeSymbolTable.exitScope();
@@ -713,32 +533,66 @@ public class SemanticVisitorReadTables implements Visitor {
     @Override
     public Object visit(IfOp ifOp) {
         //entro scope if
-        activeSymbolTable.enterSpecificScope(getProgressiveName("if"));
+        activeSymbolTable.enterSpecificScope(setProgressiveName("if"));
 
         //mi assicuro che espressione sia booleana, e la visito
         ifOp.expr.accept(this);
         if(ifOp.expr.getNodeType() != Type.BOOLEAN){
-            //TODO migliora eccezione
-            throw new RuntimeException("l'if vuole un boolean come espressione");
+            throw new NonBooleanExpression("if");
         }
 
         //visito body
+        ifOp.ifBody.setFunProcName(ifOp.getFunProcName());
         ifOp.ifBody.accept(this);
+        ifOp.setNodeTypes(ifOp.ifBody.getNodeTypes());
 
         //visito elifs
         List<ElifOp> elifs = ifOp.elifs;
         if(elifs != null && elifs.size()>0){
             for(ElifOp e : elifs){
-                elifCount++;
+                e.setFunProcName(ifOp.getFunProcName());
                 e.accept(this);
             }
+
         }
 
         //se ci sta else lo visito
         if(ifOp.elseBody!=null){
-            elseCount++;
+            ifOp.elseBody.setFunProcName(ifOp.getFunProcName());
             ifOp.elseBody.accept(this);
         }
+
+
+
+        //il return o sta sia in if che elif che else oppure non va bene
+        boolean isReturnInAll = true;
+        List<Type> ifTypes = ifOp.getNodeTypes();
+        if(ifTypes == null)
+            isReturnInAll = false;
+
+        if(elifs != null && elifs.size()>0){
+            for(ElifOp e : elifs){
+                List<Type> elifTypes = e.getNodeTypes();
+                if(ifTypes == null)
+                    isReturnInAll = false;
+            }
+        }
+
+        if(ifOp.elseBody==null) //l'else deve esserci per forza
+            isReturnInAll = false;
+        else {
+            List<Type> elseTypes = ifOp.elseBody.getNodeTypes();
+            if(elseTypes == null)
+                isReturnInAll = false;
+        }
+
+        if(isReturnInAll)
+            ifOp.setHasReturnTypes(true);
+        else
+            ifOp.setHasReturnTypes(false);
+
+
+
 
         //esco scope if
         activeSymbolTable.exitScope();
@@ -748,29 +602,30 @@ public class SemanticVisitorReadTables implements Visitor {
 
     @Override
     public Object visit(ElseOp elseOp) {
-        activeSymbolTable.enterSpecificScope(getProgressiveName("else"));
-        //
+        activeSymbolTable.enterSpecificScope(setProgressiveName("else"));
+
+        elseOp.elseBody.setFunProcName(elseOp.getFunProcName());
         elseOp.elseBody.accept(this);
-        //esco scope
+        elseOp.setNodeTypes(elseOp.elseBody.getNodeTypes());
+
         activeSymbolTable.exitScope();
+
         return null;
     }
-
-    /*--------*/
 
     @Override
     public Object visit(WhileOp whileOp) {
         //entro scope while
-        activeSymbolTable.enterSpecificScope(getProgressiveName("while"));
+        activeSymbolTable.enterSpecificScope(setProgressiveName("while"));
 
         //mi assicuro che espressione sia booleana, e la visito
         whileOp.whileExpr.accept(this);
         if(whileOp.whileExpr.getNodeType() != Type.BOOLEAN){
-            //TODO migliora eccezione
-            throw new RuntimeException("Il while vuole un boolean come espressione");
+            throw new NonBooleanExpression("while");
         }
 
         //visito body
+        whileOp.doBody.setFunProcName(whileOp.getFunProcName());
         whileOp.doBody.accept(this);
 
         //esco scope while
@@ -778,10 +633,7 @@ public class SemanticVisitorReadTables implements Visitor {
         return null;
     }
 
-    /*--------*/
-
-    /*-------------------------------------------------*/
-
+    /*-------------*/
 
     @Override
     public Object visit(IOArgsOp ioArgsOp) {
@@ -793,38 +645,167 @@ public class SemanticVisitorReadTables implements Visitor {
                 if(e.dollarMode()){
                     e.expression().accept(this);
                     if(!(e.expression() instanceof Id)){
-                        //TODO fai bene eccezione
-                        throw new RuntimeException("Il valore nel $ deve essere id.");
+                        throw new Invalid_IO_Id(); //Il valore nel $ deve essere id
                     }else{
                         Id id = (Id) e.expression();
-                        SymbolItem s = activeSymbolTable.lookup(id.idName);
-                        if(s == null)
-                           s = findInOtherScope(id.idName);
-                        if(!(s.getItemType() == SymbolItemType.VARIABLE)){
-                            //TODO fai bene eccezione
-                            throw new RuntimeException("Il valore nel $ deve essere id di variabileeee.");
+                        if(id.getIdItemType() != SymbolItemType.VARIABLE){
+                            throw new Invalid_IO_Id();
                         }
-
-
+                    }
+                }else{
+                    e.expression().accept(this);
+                    if(!(e.expression() instanceof StringConstNode) && !(e.expression().getNodeType() == Type.STRING)) {
+                        throw new RuntimeException("fuori dal $() non può essere un id, gli id vanno dentro $()");
                     }
                 }
             }
         }
-        if(mode == IOMode.WRITE || mode == IOMode.WRITERETURN){
+
+        if(mode == IOMode.WRITE || mode == IOMode.WRITERETURN){  // -->
             for(IOArgsOp.IoExpr e : exprList) {
                 e.expression().accept(this);
+                if(e.dollarMode()){
+
+                }else{
+                    if(!(e.expression() instanceof StringConstNode) && !(e.expression().getNodeType() == Type.STRING)) {
+                        throw new RuntimeException("fuori dal $() non può essere un id, gli id vanno dentro $()");
+                    }
+                }
             }
         }
-            return null;
-    }
 
-
-    /*-------------------------------------------------*/
-
-    @Override
-    public Object visit(ProcFunParamOp procFunParamOp) {
         return null;
     }
+
+    /*-------------*/
+
+    @Override
+    public Object visit(AddOp addOp) {
+        Type t = visitBinaryExpr(addOp);
+        addOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(DiffOp diffOp) {
+        Type t = visitBinaryExpr(diffOp);
+        diffOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(DivOp divOp) {
+        Type t = visitBinaryExpr(divOp);
+        divOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(MulOp mulOp) {
+        Type t = visitBinaryExpr(mulOp);
+        mulOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(AndOp andOp) {
+        Type t = visitBinaryExpr(andOp);
+        andOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(OrOp orOp) {
+        Type t = visitBinaryExpr(orOp);
+        orOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(EqOp eqOp) {
+        Type t = visitBinaryExpr(eqOp);
+        eqOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(GeOp geOp) {
+        Type t = visitBinaryExpr(geOp);
+        geOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(GtOp gtOp) {
+        Type t = visitBinaryExpr(gtOp);
+        gtOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(LeOp leOp) {
+        Type t = visitBinaryExpr(leOp);
+        leOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(LtOp ltOp) {
+        Type t = visitBinaryExpr(ltOp);
+        ltOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(NeOp neOp) {
+        Type t = visitBinaryExpr(neOp);
+        neOp.setNodeType(t);
+        return null;
+    }
+
+    /*-------------*/
+
+    @Override
+    public Object visit(MinusOp minusOp) {
+        Type t = visitUnaryExpr(minusOp);
+        minusOp.setNodeType(t);
+        return null;
+    }
+
+    @Override
+    public Object visit(NotOp notOp) {
+        Type t = visitUnaryExpr(notOp);
+        notOp.setNodeType(t);
+        return null;
+    }
+
+    /*-------------*/
+
+    @Override
+    public Object visit(IntConstNode constNode) {
+        constNode.setNodeType(Type.INTEGER);
+        return null;
+    }
+
+    @Override
+    public Object visit(RealConstNode constNode) {
+        constNode.setNodeType(Type.REAL);
+        return null;
+    }
+
+    @Override
+    public Object visit(StringConstNode constNode) {
+        constNode.setNodeType(Type.STRING);
+        return null;
+    }
+
+    @Override
+    public Object visit(BoolConstNode constNode) {
+        constNode.setNodeType(Type.BOOLEAN);
+        return null;
+    }
+
+    /*-------------*/
 
     @Override
     public Object visit(VarDeclOp varDeclOp) {
@@ -832,8 +813,12 @@ public class SemanticVisitorReadTables implements Visitor {
     }
 
     @Override
-    public Object visit(ConstNode constNode) {
+    public Object visit(ProcFunParamOp procFunParamOp) {
         return null;
     }
 
+    @Override
+    public Object visit(ConstNode constNode) {
+        return null;
+    }
 }

@@ -1,5 +1,7 @@
 package main.syntaxtree.visitor;
 
+import main.syntaxtree.enums.Mode;
+import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.BodyOp;
 import main.syntaxtree.nodes.ProcFunParamOp;
 import main.syntaxtree.nodes.ProgramOp;
@@ -11,23 +13,82 @@ import main.syntaxtree.nodes.expr.constNodes.*;
 import main.syntaxtree.nodes.expr.unExpr.MinusOp;
 import main.syntaxtree.nodes.expr.unExpr.NotOp;
 import main.syntaxtree.nodes.iter.FunDeclOp;
+import main.syntaxtree.nodes.iter.IterOp;
 import main.syntaxtree.nodes.iter.ProcOp;
 import main.syntaxtree.nodes.iter.VarDeclOp;
 import main.syntaxtree.nodes.stat.*;
 
+import java.util.Map;
+
 public class CVisitor implements Visitor{
-    @Override
-    public Object visit(Id id) {
-        return null;
+    private int bufferSize = 256;
+    private StringBuffer procFunSigns;
+
+    public CVisitor() {
+        procFunSigns = new StringBuffer();
     }
+
+    private String transformVariables(Type t, String name){
+        switch (t){
+            case INTEGER, BOOLEAN -> {
+                return "int " + name;
+            }
+            case REAL -> {
+                return "float " + name;
+            }
+            case STRING -> {
+                return "char "+ name + "["+bufferSize+"]";
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    /********************************************************************************/
 
     @Override
     public Object visit(ProgramOp programOp) {
+        StringBuffer resultProgram =new StringBuffer();
+
+        //1. librerie da includere
+        String library1 = "#include <stdio.h>\n";
+        resultProgram.append(library1);
+
+        //
+        StringBuffer sb =new StringBuffer();
+        for(IterOp i : programOp.itersList) {
+            String s = (String) i.accept(this);
+            sb.append(s);
+        }
+
+        //2. firma funzioni (eccetto main)
+        resultProgram.append(procFunSigns);
+        //3. programma
+        resultProgram.append(sb);
+
+        System.out.println(resultProgram.toString());
         return null;
     }
 
     @Override
     public Object visit(VarDeclOp varDeclOp) {
+        StringBuffer sb = new StringBuffer();
+
+        Type type = varDeclOp.type;
+        Type astType = varDeclOp.getNodeType();
+        System.out.println("------"+type+"-"+astType);
+
+        for(Map.Entry<Id, ConstNode> entry : varDeclOp.ids.entrySet()) {
+            Id id = entry.getKey();
+            ConstNode cn = entry.getValue();
+        }
+
+        return null;
+    }
+
+    @Override
+    public Object visit(Id id) {
         return null;
     }
 
@@ -38,7 +99,74 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(ProcOp procOp) {
-        return null;
+        //int main(...){
+        //}
+
+        StringBuffer sb =new StringBuffer();
+        String nameProc = procOp.procName.idName;
+        //return type
+        String returnType;
+        if(nameProc.equals("main"))
+            returnType = "int";
+        else
+            returnType = "void";
+
+        //proc params
+        StringBuffer params = new StringBuffer();
+        //TODO come si passano le stringhe ??????
+        if(procOp.procParamsList != null){
+            int paramsSize = procOp.procParamsList.size();
+            int i = 0;
+            for(ProcFunParamOp op : procOp.procParamsList){
+                i++;
+                params.append((String) op.accept(this));
+                if(!(i == paramsSize))
+                    params.append(",");
+            }
+        }
+
+        StringBuffer result = new StringBuffer();
+        String sign = returnType + " " + nameProc +"("+params+")";
+        result.append(sign);
+        result.append("{\n");
+        result.append((String) procOp.procBody.accept(this));
+        result.append("\n}\n");
+
+        sb.append(result);
+        if(!nameProc.equals("main"))
+            procFunSigns.append(sign+";\n");
+
+        return sb.toString();
+    }
+
+
+    @Override
+    public Object visit(ProcFunParamOp procFunParamOp) {
+        StringBuffer sb =new StringBuffer();
+
+        //gestione parametri
+        Mode modeParam = procFunParamOp.mode;
+        String nameParam = procFunParamOp.id.idName;
+        Type typeParam = procFunParamOp.type;
+
+        String name;
+        if(modeParam == Mode.OUT){
+            name = "*"+nameParam+"_out";
+        }else{
+            name = nameParam;
+        }
+
+        String result = transformVariables(typeParam, name);
+        sb.append(result);
+
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(BodyOp bodyOp) {
+        StringBuffer sb =new StringBuffer();
+
+        return sb.toString();
     }
 
     @Override
@@ -61,15 +189,9 @@ public class CVisitor implements Visitor{
         return null;
     }
 
-    @Override
-    public Object visit(ProcFunParamOp procFunParamOp) {
-        return null;
-    }
 
-    @Override
-    public Object visit(BodyOp bodyOp) {
-        return null;
-    }
+
+
 
     @Override
     public Object visit(AssignOp assignOp) {

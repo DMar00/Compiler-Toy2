@@ -43,6 +43,15 @@ public class SymbolTable {
     }
 
     /*lookup method*/
+    public SymbolItem lookupOnlyActive(String idName) {
+        SymbolNode currentLooking = activeTable;
+
+        if(currentLooking.containsKey(idName))
+            return currentLooking.get(idName);
+
+        return null;
+    }
+
     public SymbolItem lookup(String idName) {
         SymbolNode currentLooking = activeTable;
 

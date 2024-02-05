@@ -1,16 +1,14 @@
 
-var c^= 5;\
-proc main(out x: real):
+proc main():
 
-        c^= 5 + ciao(45);
-        miao(45463);
+    var a ^= 6;\
+    var b ^= 5;\
+    var c ^= "Miao";\
 
-endproc
-
-func ciao(x : integer)->integer:
-    return 1;
-endfunc
-
-proc miao (x : integer):
+    -->! ""+"" $(a+b);
+    -->!$("a");
 
 endproc
+
+
+

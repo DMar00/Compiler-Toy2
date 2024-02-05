@@ -24,7 +24,7 @@ public class SymbolItem {
         this.isParamOUT = true;
     }
 
-    //costruttore per variabili
+    /**Costruttore per variabili*/
     public SymbolItem(String id, Type varType) {
         this.id = id;
         this.varType = varType;
@@ -36,7 +36,7 @@ public class SymbolItem {
         this.isParamOUT = true;
     }
 
-    //costruttore per funzioni
+    /**Costruttore per funzioni*/
     public SymbolItem(String id, List<ProcFunParamOp> params, List<Type> returnTypeList) {
         this.id = id;
         this.itemType = SymbolItemType.FUNCTION;
@@ -47,7 +47,7 @@ public class SymbolItem {
         this.marker = true;
     }
 
-    //costruttore per funzioni
+    /**Costruttore per procedure*/
     public SymbolItem(String id, List<ProcFunParamOp> params) {
         this.id = id;
         this.itemType = SymbolItemType.PROCEDURE;

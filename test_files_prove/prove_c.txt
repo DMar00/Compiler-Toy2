@@ -1,0 +1,12 @@
+var x:integer;\
+var y,z:integer;\
+var w:integer; u:real;\
+var e^=5;\
+var f,g^=5,5;\
+proc main():
+
+endproc
+
+proc miao(x:integer, out n:real, b:boolean, out s:string):
+
+endproc

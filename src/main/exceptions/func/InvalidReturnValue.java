@@ -1,7 +1,7 @@
 package main.exceptions.func;
 
 public class InvalidReturnValue  extends RuntimeException{
-    public InvalidReturnValue() {
-        super("Function must return one or more values, not zero !");
+    public InvalidReturnValue(String funcName) {
+        super("Function '"+funcName+"' must return one or more values, not zero !");
     }
 }
