@@ -100,7 +100,7 @@ public class XMLVisitor implements Visitor{
         for (Map.Entry<Id, ConstNode> entry : varDeclOp.ids.entrySet()) {
             Id idName = entry.getKey();
             ConstNode value = entry.getValue();
-            //TODO padre fatto bene ????
+
             Element node = document.createElement("Var");
             node.appendChild((Node) idName.accept(this));
             if (value!=null)

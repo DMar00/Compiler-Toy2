@@ -1,14 +1,17 @@
 
 proc main():
+    var c ^= caio;\
 
-    var a ^= 6;\
-    var b ^= 5;\
-    var c ^= "Miao";\
-
-    -->! ""+"" $(a+b);
-    -->!$("a");
+    c ^= 5 ;
 
 endproc
 
+func ciao()->integer, real:
+
+endfunc
+
+proc miao(out x : integer):
+
+endproc
 
 

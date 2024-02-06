@@ -9,6 +9,7 @@ import main.exceptions.if_elif_while.NonBooleanExpression;
 import main.exceptions.io.Invalid_IO_Id;
 import main.exceptions.proc.MainNotFound;
 import main.exceptions.proc.UnexpectedReturn;
+import main.exceptions.return_.MismatchedReturnCount;
 import main.syntaxtree.enums.IOMode;
 import main.syntaxtree.enums.Mode;
 import main.syntaxtree.enums.Type;
@@ -44,7 +45,7 @@ import java.util.Map;
 public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implements Visitor {
     public SemanticVisitorSecondVisit(SymbolTable symbolTableRoot) {
         this.activeSymbolTable = symbolTableRoot;
-        resetVariablesCount();  //TODO necessario ?
+        resetVariablesCount();
     }
 
     private void checkIfVariableId(Expr e){
@@ -117,8 +118,6 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
     }
 
     /*----------------------------------------------------------------------------------------*/
-    //TODO nelle espressioni l'id deve essere identificatore di variabile (non di altro)
-    //TODO vedi bene il tipo dei nodi che esce fuori dall'AST con le specifiche
 
     @Override
     public Object visit(ProgramOp programOp) {
@@ -168,8 +167,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
             if(st instanceof ReturnOp){
                 returnCount ++;
                 if(returnCount > 1){
-                    //TODO migliora eccezione
-                    throw new RuntimeException("C'è più di un return");
+                    throw new InvalidReturnCountException(bodyOp.getFunProcName());
                 }
                 bodyOp.setNodeTypes( ((Node)st).getNodeTypes() ) ;
                 statReturn = true;
@@ -204,12 +202,6 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
             //se non è id di variabile
             checkIfVariableId(id);
-
-            //TODO non deve essere lanciata eccezione, semplicemente nella
-            // generazione del c un'operazione del genere non deve produrre output
-            /*if(!id.getOut()){   //se id non è modificabile
-                throw new VariableNotPassedByReference(id.idName);
-            }*/
         }
 
         List<Type> exprsType= new ArrayList<>();  //lista tipi exprs a destra
@@ -245,8 +237,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         int numExpr = assignOp.exprList.size();
         //se il numero di parametri a destra è superiore al numero di parametri a sinistra, eccezione
         if(numExpr > numIds) {
-            //TODO elimian parametro eccezione
-            throw new MismatchedParameterCount("");
+            throw new MismatchedParameterCount();
         }else{ //id <= expr
             List<Id> idsSX = assignOp.idList;   //lista id a sinistra
             List<Type> exprDX = exprsType;  //lista exprs a destra
@@ -264,8 +255,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
                 }
             }else {
-                //TODO elimian parametro eccezione
-                throw new MismatchedParameterCount("");
+                throw new MismatchedParameterCount();
             }
         }
 
@@ -349,8 +339,8 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                     if(procParam.get(i).procMode){  //false = noRif (per valore), true = per riferimento
                         if(!(paramsFound.get(i).mode == Mode.OUT))
                             throw new InvalidParameterReference(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
-                        if(!(procParam.get(i).expr instanceof Id)) //TODO id deve essere per forza variabile?
-                            throw new InvalidParameter(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
+                        //if(!(procParam.get(i).expr instanceof Id))
+                           // throw new InvalidParameter(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
                     }else{
                         if(paramsFound.get(i).mode == Mode.OUT)
                             throw new InvalidParameterNotReference(SymbolItemType.PROCEDURE.toString(), procName, idProcParam);
@@ -387,8 +377,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         funcBody.setFunProcName(funcName);
         funcBody.accept(this);
         if(!funcBody.isHasReturnTypes())
-            //TODO migliora eccezione
-            throw new RuntimeException("Missing return in all branch");
+            throw new RuntimeException("Missing return in all branch in '" + funcName+"' !");
 
 
         //ritorno in scope padre
@@ -407,16 +396,9 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
             for(Expr e : funParams){
                 e.accept(this);
 
-                //TODO fare metodo generale?
                 //verifico che se l'espressione è un id , deve essere un'id di variabile
                 if(e instanceof Id){
                     checkIfVariableId(e);
-                    /*Id id = (Id) e;
-                    SymbolItem s = activeSymbolTable.lookup(id.idName);
-                    if(s.getItemType()!=SymbolItemType.VARIABLE){
-                        //TODO fai bene eccezione
-                        throw new RuntimeException(id.idName+" non è id di variabile");
-                    }*/
                 }
             }
         }
@@ -489,13 +471,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         if(found.getItemType() == SymbolItemType.FUNCTION){
             List<Type> returnTypeFound = found.getReturnTypeList();
             if(exprTypes.size()!=returnTypeFound.size())
-                //TODO migliora eccezione
-                throw new RuntimeException("Il numero di valori restituiti non è conforme");
+                throw new MismatchedReturnCount(returnProcFun, returnTypeFound.size(), exprTypes.size());
             else{
                 for(int i=0 ; i<returnTypeFound.size(); i++){
                     if(exprTypes.get(i) != returnTypeFound.get(i))  //TODO tipi uguali o compatibili?
-                        //TODO migliora eccezione
-                        throw new RuntimeException("id restituito non stesso tipo");
+                        throw new MismatchedTypes(exprTypes.get(i).toString(), returnTypeFound.get(i).toString());
                 }
             }
 

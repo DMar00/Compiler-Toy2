@@ -67,7 +67,7 @@ public class CVisitor implements Visitor{
         //3. programma
         resultProgram.append(sb);
 
-        System.out.println(resultProgram.toString());
+        System.out.println(resultProgram);
         return null;
     }
 
@@ -76,15 +76,22 @@ public class CVisitor implements Visitor{
         StringBuffer sb = new StringBuffer();
 
         Type type = varDeclOp.type;
-        Type astType = varDeclOp.getNodeType();
-        System.out.println("------"+type+"-"+astType);
+        String transType = transformVariables(type, "");
 
         for(Map.Entry<Id, ConstNode> entry : varDeclOp.ids.entrySet()) {
             Id id = entry.getKey();
             ConstNode cn = entry.getValue();
+            String s1 = transType + " " + id.idName + " ";
+            sb.append(s1);   //int n =
+            if(cn != null) {
+                String value = (String) cn.accept(this);
+                String s2 = "= " + value;
+                sb.append(s2);   //int n = 5
+            }
+            sb.append(";\n");
         }
 
-        return null;
+        return sb.toString();
     }
 
     @Override
@@ -95,6 +102,77 @@ public class CVisitor implements Visitor{
     @Override
     public Object visit(FunDeclOp funDeclOp) {
         return null;
+    }
+
+    @Override
+    public Object visit(ProcFunParamOp procFunParamOp) {
+        StringBuffer sb =new StringBuffer();
+
+        //gestione parametri
+        Mode modeParam = procFunParamOp.mode;
+        String nameParam = procFunParamOp.id.idName;
+        Type typeParam = procFunParamOp.type;
+
+        String name;
+        if(modeParam == Mode.OUT){
+            name = "*"+nameParam+"_out";
+        }else{
+            name = nameParam;
+        }
+
+        String result = transformVariables(typeParam, name);
+        sb.append(result);
+
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(BodyOp bodyOp) {
+
+        StringBuffer sb =new StringBuffer();
+
+        for(VarDeclOp v : bodyOp.varDeclOpList) {
+            String var = "\t" + v.accept(this);
+            sb.append(var);
+        }
+
+
+
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(IntConstNode constNode) {
+        StringBuffer sb = new StringBuffer();
+        sb.append(constNode.value+"");
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(RealConstNode constNode) {
+        StringBuffer sb = new StringBuffer();
+        sb.append(constNode.value+"");
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(StringConstNode constNode) {
+        StringBuffer sb = new StringBuffer();
+        String var = "\"" + constNode.value + "\"";
+        sb.append(var);
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(BoolConstNode constNode) {
+        StringBuffer sb = new StringBuffer();
+        String val;
+        if(constNode.value) {
+            val = "1";
+        } else
+            val = "0";
+        sb.append(val);
+        return sb.toString();
     }
 
     @Override
@@ -137,56 +215,6 @@ public class CVisitor implements Visitor{
             procFunSigns.append(sign+";\n");
 
         return sb.toString();
-    }
-
-
-    @Override
-    public Object visit(ProcFunParamOp procFunParamOp) {
-        StringBuffer sb =new StringBuffer();
-
-        //gestione parametri
-        Mode modeParam = procFunParamOp.mode;
-        String nameParam = procFunParamOp.id.idName;
-        Type typeParam = procFunParamOp.type;
-
-        String name;
-        if(modeParam == Mode.OUT){
-            name = "*"+nameParam+"_out";
-        }else{
-            name = nameParam;
-        }
-
-        String result = transformVariables(typeParam, name);
-        sb.append(result);
-
-        return sb.toString();
-    }
-
-    @Override
-    public Object visit(BodyOp bodyOp) {
-        StringBuffer sb =new StringBuffer();
-
-        return sb.toString();
-    }
-
-    @Override
-    public Object visit(IntConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(RealConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(StringConstNode constNode) {
-        return null;
-    }
-
-    @Override
-    public Object visit(BoolConstNode constNode) {
-        return null;
     }
 
 

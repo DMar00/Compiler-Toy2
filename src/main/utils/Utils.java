@@ -14,7 +14,9 @@ public class Utils {
         else if(cn instanceof RealConstNode) return Type.REAL;
         else if(cn instanceof StringConstNode) return Type.STRING;
         else if(cn instanceof BoolConstNode) return Type.BOOLEAN;
-        else return null;   //TODO exception ("A VAR declaration must have an assignment to a constant value!");
+        else {
+            return null;   //exception ("A VAR declaration must have an assignment to a constant value!");
+        }
     }
 
     public static String ExprToSign(Expr e){

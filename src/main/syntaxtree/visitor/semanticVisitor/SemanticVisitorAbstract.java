@@ -60,7 +60,6 @@ public abstract class SemanticVisitorAbstract {
         }
 
         if(!found){
-            //TODO invece di "id" come faccio a dire se variabile, nome di func  etc...
             throw new IdNotDeclared("Id", idToFind);
         }
 
