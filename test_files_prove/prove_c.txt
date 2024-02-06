@@ -8,8 +8,15 @@ var f,g^=5,5.3;\
 proc main():
     var c : boolean ;\
     var pippo ^= "ciao";\
+    e, w ^= 7, 2;
+    %f, e ^= bau(5, 5.7);%
 endproc
 
 proc miao(x:integer, out n:real, b:boolean, out s:string):
 
 endproc
+
+func bau(belzebu : integer, satan : real) -> integer, integer:
+    %return 7;%
+    return 77, 66;
+endfunc

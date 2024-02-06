@@ -5,6 +5,7 @@ import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.BodyOp;
 import main.syntaxtree.nodes.ProcFunParamOp;
 import main.syntaxtree.nodes.ProgramOp;
+import main.syntaxtree.nodes.expr.Expr;
 import main.syntaxtree.nodes.expr.FunCallOp;
 import main.syntaxtree.nodes.expr.Id;
 import main.syntaxtree.nodes.expr.ProcExpr;
@@ -95,16 +96,6 @@ public class CVisitor implements Visitor{
     }
 
     @Override
-    public Object visit(Id id) {
-        return null;
-    }
-
-    @Override
-    public Object visit(FunDeclOp funDeclOp) {
-        return null;
-    }
-
-    @Override
     public Object visit(ProcFunParamOp procFunParamOp) {
         StringBuffer sb =new StringBuffer();
 
@@ -136,7 +127,10 @@ public class CVisitor implements Visitor{
             sb.append(var);
         }
 
-
+        for(Stat s : bodyOp.statList) {
+            String var = (String) s.accept(this);
+            sb.append(var);
+        }
 
         return sb.toString();
     }
@@ -217,14 +211,118 @@ public class CVisitor implements Visitor{
         return sb.toString();
     }
 
+    private void isFunc(Expr e) {
+        if(e instanceof FunCallOp) {
+            FunCallOp f = (FunCallOp) e;
 
-
-
+        }
+    }
 
     @Override
     public Object visit(AssignOp assignOp) {
-        return null;
+        StringBuffer sb = new StringBuffer();
+        //a ^= 5;  ->  a = 5;
+        //a, b ^= 5, 6; -> a = 5; b = 6;
+        for(int i = 0; i<assignOp.idList.size(); i++) {
+            String expr = (String) assignOp.exprList.get(i).accept(this);
+            String s = "\t" + assignOp.idList.get(i).idName + " = " + expr + ";\n";
+            sb.append(s);
+        }
+
+        //a ^= func(); -> a = func();  func ha un sono val di ritorno
+        //a, b ^= func(); -> a = *p1; b = *p2;
+        return sb.toString();
     }
+
+    @Override
+    public Object visit(FunDeclOp funDeclOp) {
+        StringBuffer sb =new StringBuffer();
+        String nameFunc = funDeclOp.functionName.idName;
+        //return type
+        String returnType;
+        int returnSize = funDeclOp.functionReturTypeList.size();
+
+        if(returnSize == 1) {
+            String t = transformVariables(funDeclOp.functionReturTypeList.get(0),"");
+            returnType = t;
+        }
+        else {
+            returnType = "void";
+        }
+
+        StringBuffer params = new StringBuffer();
+        //TODO come si passano le stringhe ??????
+        if(funDeclOp.functionParamList != null){
+            int paramsSize = funDeclOp.functionParamList.size();
+            int i = 0;
+            for(ProcFunParamOp op : funDeclOp.functionParamList){
+                i++;
+                params.append((String) op.accept(this));
+                if(!(i == paramsSize))
+                    params.append(",");
+            }
+        }
+
+        StringBuffer result = new StringBuffer();
+        String s1 = returnType + " " + nameFunc + " (" + params + ")";
+        result.append(s1);
+        result.append("{\n");
+        result.append((String) funDeclOp.functionBody.accept(this));
+        result.append("\n}\n");
+
+        sb.append(result);
+
+        procFunSigns.append(s1+";\n");
+
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(FunCallOp funCallOp) {
+        StringBuffer sbPar = new StringBuffer();
+        StringBuffer sb = new StringBuffer();
+
+        if(funCallOp.exprList != null) {
+            for(int i = 0; i<funCallOp.exprList.size(); i++) {
+                String expr = (String) funCallOp.exprList.get(i).accept(this);
+                sbPar.append(expr);
+                if(i<(funCallOp.exprList.size()-1)) {
+                    sbPar.append(", ");
+                }
+            }
+        }
+
+        String s = funCallOp.funName.idName + "(" + sbPar + ")";
+        sb.append(s);
+
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(Id id) {
+        return id.idName;
+    }
+
+    @Override
+    public Object visit(ReturnOp returnOp) {
+        StringBuffer sb = new StringBuffer();
+        String s;
+
+        if(returnOp.exprList.size() == 1) {
+            String s1 = (String) returnOp.exprList.get(0).accept(this);
+            s = "\treturn " + s1 + ";";
+        }
+        else {
+            s = "";
+        }
+
+        sb.append(s);
+
+        return sb.toString();
+    }
+
+
+
 
     @Override
     public Object visit(MinusOp minusOp) {
@@ -238,11 +336,6 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(ProcExpr procExpr) {
-        return null;
-    }
-
-    @Override
-    public Object visit(FunCallOp funCallOp) {
         return null;
     }
 
@@ -308,11 +401,6 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(ProcCallOp procCallOp) {
-        return null;
-    }
-
-    @Override
-    public Object visit(ReturnOp returnOp) {
         return null;
     }
 

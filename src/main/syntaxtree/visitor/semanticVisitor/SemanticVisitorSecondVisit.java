@@ -458,6 +458,10 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         List<Type> exprTypes = new ArrayList<>();
         for(Expr e: returnOp.exprList){
             e.accept(this);
+
+            //TODO non si possono passare nel return e anche nelle espressioni che non siano parte destra
+            // di un assegnazione le chiamate a funzione che restituiscono piu valori
+
             exprTypes.add(e.getNodeType());
         }
 
