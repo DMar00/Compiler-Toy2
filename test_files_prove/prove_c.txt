@@ -22,4 +22,7 @@ endfunc
 proc muu(x:integer, out y:integer):
     y ^= 5;
     x ^= 3;
+
+    <-- "ciao";
+
 endproc

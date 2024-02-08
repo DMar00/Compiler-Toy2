@@ -8,11 +8,15 @@ import main.syntaxtree.visitor.CVisitor;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorFirstVisit;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorSecondVisit;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Toy2ToC {
     public static void main(String[] args) throws FileNotFoundException {
@@ -38,15 +42,32 @@ public class Toy2ToC {
             astRoot.accept(scopingVisitor2);
 
             //Visitor C
-            for (Map.Entry<String, List<Type>> m : scopingVisitor.getFuncMap().entrySet())
-                System.out.println(m);
             CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap());
             astRoot.accept(cVisitor);
 
+            Path percorso = Paths.get(args[0]);
+            String fileName = percorso.getFileName().toString();
+            String cFileName = "c_" + fileName ;
+            cVisitor.printToFile("cOut/"+cFileName+ ".c");
 
-            //Path percorso = Paths.get(args[0]);
-            //String fileName = percorso.getFileName().toString();
-            //xmlGen.printToFile("xmlout/ast_" + fileName + ".xml");
+
+
+            File infile = new File("cOut/"+cFileName+ ".c");
+            String dirPath = infile.getParent();
+            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+".exe", cFileName);
+            builder.directory(new File(dirPath));
+            builder.redirectErrorStream(true);
+            Process p = builder.start();
+            Scanner sc = new Scanner(p.getInputStream());
+            if (sc.hasNextLine()) {
+                System.out.println("C compiler output...\n");
+                while (sc.hasNextLine()) {
+                    String line = sc.nextLine();
+                    System.out.println(line);
+                }
+            }
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }

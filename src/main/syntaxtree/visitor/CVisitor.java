@@ -1,5 +1,6 @@
 package main.syntaxtree.visitor;
 
+import main.syntaxtree.enums.IOMode;
 import main.syntaxtree.enums.Mode;
 import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.BodyOp;
@@ -20,12 +21,16 @@ import main.syntaxtree.nodes.iter.ProcOp;
 import main.syntaxtree.nodes.iter.VarDeclOp;
 import main.syntaxtree.nodes.stat.*;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class CVisitor implements Visitor{
+    private StringBuffer resultProgram;
     private int bufferSize = 256;
     private StringBuffer procFunSigns;
     private HashMap<String, List<Type>> funcMap;
@@ -35,10 +40,18 @@ public class CVisitor implements Visitor{
     /**/
 
     public CVisitor(HashMap<String, List<Type>> funcMap) {
+        resultProgram =new StringBuffer();
         procFunSigns = new StringBuffer();
         idMap = new HashMap<>();
         this.funcMap = funcMap;
         pointerCount = 0;
+    }
+
+    public void printToFile(String path) throws IOException {
+        BufferedWriter bwr = new BufferedWriter(new FileWriter(path));
+        bwr.write(resultProgram.toString());
+        bwr.flush();
+        bwr.close();
     }
 
     private String transformVariables(Type t, String name){
@@ -62,7 +75,6 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(ProgramOp programOp) {
-        StringBuffer resultProgram =new StringBuffer();
 
         //1. librerie da includere
         String library1 = "#include <stdio.h>\n";
@@ -499,7 +511,14 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(AddOp addOp) {
-        return writeBinaryExpr(addOp, "+");
+        String eLeft = (String) addOp.leftNode.accept(this);
+        String eRight = (String) addOp.rightNode.accept(this);
+
+        if(addOp.leftNode.getNodeType() == Type.STRING && addOp.rightNode.getNodeType() == Type.STRING) {
+            return eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
+        } else {
+            return writeBinaryExpr(addOp, "+");
+        }
     }
 
     @Override
@@ -556,35 +575,136 @@ public class CVisitor implements Visitor{
         return writeBinaryExpr(orOp, "||");
     }
 
-
-
-
-
-
-
     @Override
-    public Object visit(ElifOp elifOp) {
-        return null;
+    public Object visit(IfOp ifOp) {
+        StringBuffer sb = new StringBuffer();
+        StringBuffer sbElifs = new StringBuffer();
+        StringBuffer sbElse = new StringBuffer();
+
+
+        String s = "if (" + ifOp.expr.accept(this) + ") {\n" + ifOp.ifBody.accept(this) + "\n}";
+
+        if(ifOp.elifs != null) {
+            for(ElifOp e : ifOp.elifs) {
+                String s1 = (String) e.accept(this);
+                sbElifs.append(s1);
+            }
+        }
+
+        if(ifOp.elseBody != null) {
+            String s1 = (String) ifOp.elseBody.accept(this);
+            sbElse.append(s1);
+        }
+
+        sb.append(s);
+        sb.append(sbElifs);
+        sb.append(sbElse);
+
+        return sb.toString();
     }
 
     @Override
-    public Object visit(IfOp ifOp) {
-        return null;
+    public Object visit(ElifOp elifOp) {
+        StringBuffer sb = new StringBuffer();
+        String s = " else if (" + elifOp.expr.accept(this) + ") {\n" + elifOp.bodyOp.accept(this) + "\n}";
+        sb.append(s);
+        return sb.toString();
     }
 
     @Override
     public Object visit(ElseOp elseOp) {
-        return null;
+        StringBuffer sb = new StringBuffer();
+        String s = " else" + "{\n" + elseOp.elseBody.accept(this) + "\n}";
+        sb.append(s);
+        return sb.toString();
     }
 
     @Override
     public Object visit(WhileOp whileOp) {
-        return null;
+        StringBuffer sb = new StringBuffer();
+        String s = "while (" + whileOp.whileExpr.accept(this) + ") {\n" + whileOp.doBody.accept(this) + "\n}";
+        sb.append(s);
+        return sb.toString();
+    }
+
+    private String getFormatSpecifier(String type) {
+        switch (type) {
+            case "integer", "boolean" -> {
+                return "%d";
+            }
+            case "real" -> {
+                return "%f";
+            }
+            case "string" -> {
+                return "%s";
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     @Override
     public Object visit(IOArgsOp ioArgsOp) {
-        return null;
+        StringBuffer sb = new StringBuffer();
+        StringBuffer sbExpr = new StringBuffer();
+        StringBuffer sbDollarId = new StringBuffer();
+
+        ArrayList<String> dollarIdList = new ArrayList<>();
+
+        if(ioArgsOp.exprList != null) {
+            for(IOArgsOp.IoExpr e: ioArgsOp.exprList) {
+                if(e.dollarMode()) {
+                    String dollarId = (String) e.expression().accept(this);
+                    dollarIdList.add(dollarId);
+                    String type = String.valueOf(e.expression().getNodeType());
+                    String ft = getFormatSpecifier(type);
+                    sbExpr.append(ft);
+                } else {
+                    String s = (String) e.expression().accept(this);
+                    sbExpr.append(s.substring(1,s.length()-1));
+                }
+            }
+
+            for(int i=0; i<dollarIdList.size(); i++) {
+                if(ioArgsOp.mode == IOMode.READ) {
+                    sbDollarId.append("&");
+                }
+                sbDollarId.append(dollarIdList.get(i));
+                if(i<dollarIdList.size()-1)
+                    sbDollarId.append(", ");
+            }
+
+        }
+
+        if(ioArgsOp.mode == IOMode.WRITE || ioArgsOp.mode == IOMode.WRITERETURN) {
+            String nl;
+            if(ioArgsOp.mode == IOMode.WRITERETURN) {
+                nl="\\n";
+            }else{
+                nl = "";
+            }
+
+            if(sbDollarId.length() == 0) {
+                String s = "printf(\"" +sbExpr+ nl + "\");\n";
+                sb.append(s);
+            } else {
+                String s = "printf(\"" +sbExpr+ nl +"\", " + sbDollarId + ");\n";
+                sb.append(s);
+            }
+
+        } else if (ioArgsOp.mode == IOMode.READ) {
+            if(sbDollarId.length() == 0) {
+                String s = "printf(\"" +sbExpr + "\");\n";
+                sb.append(s);
+            } else {
+                String s = "scanf(\"" +sbExpr +"\", " + sbDollarId + ");\n";
+                sb.append(s);
+            }
+
+        }
+
+        return sb.toString();
     }
 
     @Override
