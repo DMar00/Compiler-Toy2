@@ -4,7 +4,9 @@ proc main():
 
     %a, b , c, d ^= bau(e, u), bau(e,u);%
 
-    e, f ^= miao(e,e), 5 ;
+    e, f ^= miao(e,e), 5+d ;
+
+    muu(e, @f);
 
 endproc
 
@@ -16,3 +18,8 @@ func bau(belzebu : integer, satan : real) -> integer, integer:
     %return 7;%
     return 77, 66;
 endfunc
+
+proc muu(x:integer, out y:integer):
+    y ^= 5;
+    x ^= 3;
+endproc

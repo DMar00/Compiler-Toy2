@@ -3,6 +3,7 @@ package main.syntaxtree.visitor;
 import main.syntaxtree.enums.Mode;
 import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.BodyOp;
+import main.syntaxtree.nodes.Node;
 import main.syntaxtree.nodes.ProcFunParamOp;
 import main.syntaxtree.nodes.ProgramOp;
 import main.syntaxtree.nodes.expr.Expr;
@@ -28,10 +29,16 @@ public class CVisitor implements Visitor{
     private int bufferSize = 256;
     private StringBuffer procFunSigns;
     private HashMap<String, List<Type>> funcMap;
+    private HashMap<String, List<String>> idMap;
+    /**/
+    private int pointerCount;
+    /**/
 
     public CVisitor(HashMap<String, List<Type>> funcMap) {
         procFunSigns = new StringBuffer();
+        idMap = new HashMap<>();
         this.funcMap = funcMap;
+        pointerCount = 0;
     }
 
     private String transformVariables(Type t, String name){
@@ -87,7 +94,7 @@ public class CVisitor implements Visitor{
         for(Map.Entry<Id, ConstNode> entry : varDeclOp.ids.entrySet()) {
             Id id = entry.getKey();
             ConstNode cn = entry.getValue();
-            String s1 = transType + " " + id.idName + " ";
+            String s1 = "\t" + transType + " " + id.idName + " ";
             sb.append(s1);   //int n =
             if(cn != null) {
                 String value = (String) cn.accept(this);
@@ -111,6 +118,12 @@ public class CVisitor implements Visitor{
 
         String name;
         if(modeParam == Mode.OUT){
+            if(idMap.containsKey(procFunParamOp.getFunProcName())) {
+                idMap.get(procFunParamOp.getFunProcName()).add(nameParam);
+            } else  {
+                idMap.put(procFunParamOp.getFunProcName(), new ArrayList<>());
+                idMap.get(procFunParamOp.getFunProcName()).add(nameParam);
+            }
             name = "*"+nameParam+"_out";
         }else{
             name = nameParam;
@@ -128,11 +141,12 @@ public class CVisitor implements Visitor{
         StringBuffer sb =new StringBuffer();
 
         for(VarDeclOp v : bodyOp.varDeclOpList) {
-            String var = "\t" + v.accept(this);
+            String var = (String) v.accept(this);
             sb.append(var);
         }
 
         for(Stat s : bodyOp.statList) {
+            ((Node)s).setFunProcName(bodyOp.getFunProcName());
             String var = (String) s.accept(this);
             sb.append(var);
         }
@@ -196,9 +210,10 @@ public class CVisitor implements Visitor{
             int i = 0;
             for(ProcFunParamOp op : procOp.procParamsList){
                 i++;
+                op.setFunProcName(procOp.procName.idName);
                 params.append((String) op.accept(this));
                 if(!(i == paramsSize))
-                    params.append(",");
+                    params.append(", ");
             }
         }
 
@@ -206,6 +221,7 @@ public class CVisitor implements Visitor{
         String sign = returnType + " " + nameProc +"("+params+")";
         result.append(sign);
         result.append("{\n");
+        procOp.procBody.setFunProcName(nameProc);
         result.append((String) procOp.procBody.accept(this));
         result.append("\n}\n");
 
@@ -216,11 +232,34 @@ public class CVisitor implements Visitor{
         return sb.toString();
     }
 
-    private void isFunc(Expr e) {
-        if(e instanceof FunCallOp) {
-            FunCallOp f = (FunCallOp) e;
-
+    @Override
+    public Object visit(ProcCallOp procCallOp) {
+        StringBuffer sb = new StringBuffer();
+        StringBuffer sbParams = new StringBuffer();
+        List<ProcExpr> procParams = procCallOp.exprList;
+        for(int i=0; i<procParams.size(); i++){
+            String p = (String) procParams.get(i).accept(this);
+            sbParams.append(p);
+            if(i<procParams.size()-1){
+                sbParams.append(", ");
+            }
         }
+        String s = "\t" + procCallOp.procName.idName + "(" + sbParams+ ");\n";
+        sb.append(s);
+
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(ProcExpr procExpr) {
+        StringBuffer sb = new StringBuffer();
+        String e = (String) procExpr.expr.accept(this);
+        if(procExpr.procMode) {
+            sb.append("&" + e);
+        } else {
+            sb.append(e);
+        }
+        return sb.toString();
     }
 
     @Override
@@ -228,9 +267,12 @@ public class CVisitor implements Visitor{
         StringBuffer sb = new StringBuffer();
         //a ^= 5;  ->  a = 5;
         //a, b ^= 5, 6; -> a = 5; b = 6;
+        //a ^= func(); -> a = func();  func ha un sono val di ritorno
+        //a, b ^= func(); -> a = *p1; b = *p2;
 
         for(int i = 0, j=0 ; i< assignOp.idList.size();  j++){
             Id id = assignOp.idList.get(i);
+            assignOp.idList.get(i).setFunProcName(assignOp.getFunProcName());
             Expr e = assignOp.exprList.get(j);
             String expr = (String) e.accept(this);
 
@@ -238,6 +280,7 @@ public class CVisitor implements Visitor{
             if(e instanceof  FunCallOp){
                 FunCallOp f = (FunCallOp) e;
                 String funcName = f.funName.idName;
+                //id.setFunProcName(funcName);
 
                 //lista parametri in chiamata a funzione
                 List<Expr> paramCallList = f.exprList;
@@ -253,18 +296,20 @@ public class CVisitor implements Visitor{
 
                     List<String> varPointers = new ArrayList<>();
                     for(int k=0; k<retTypes; k++){
-                        System.out.println("i = "+i+ " - id : "+assignOp.idList.get(i).idName+" - j: "+j+" - expr:"+expr);
+                        //System.out.println("i = "+i+ " - id : "+assignOp.idList.get(i).idName+" - j: "+j+" - expr:"+expr);
                         //dichiaro le variabili che saranno passate come puntatore --> int p0; ...
                         //Type t = retTypesList.get(j);
                         Type t = retTypesList.get(k);
-                        varPointers.add("p"+k);
-                        String decl = "\t"+transformVariables(t,"") + " p" + k +";\n";
+                        varPointers.add("p"+pointerCount);
+                        String decl = "\t"+transformVariables(t,"") + " p" + pointerCount +";\n";
                         sb.append(decl);
                         //assegnazione id = pointer;
-                        Id updatedId = assignOp.idList.get(i);
-                        String assign = "\t"+updatedId.idName + " =  p" + k +";\n";
+                        assignOp.idList.get(i).setFunProcName(assignOp.getFunProcName());
+                        String updatedId =  (String) assignOp.idList.get(i).accept(this);
+                        String assign = "\t"+updatedId + " =  p" + pointerCount+";\n";
                         sbAssignPointers.append(assign);
                         i++;
+                        pointerCount++;
                     }
 
                     //chiamata a funzione --> func(param1, ..., *p ...); ...
@@ -294,79 +339,20 @@ public class CVisitor implements Visitor{
                     sb.append(sbCall);
                     sb.append(sbAssignPointers);
                 }else{
-                    String s = "\t" + assignOp.idList.get(i).idName + " = " + expr + ";\n";
+                    String idFun = (String) assignOp.idList.get(i).accept(this);
+                    String s = "\t" + idFun + " = " + expr + ";\n";
                     sb.append(s);
                     i++;
                 }
             }else{
-                System.out.println("i = "+i);
-
-                String s = "\t" + assignOp.idList.get(i).idName + " = " + expr + ";\n";
+                //System.out.println("i = "+i);
+                String idFun = (String) assignOp.idList.get(i).accept(this);
+                String s = "\t" + idFun + " = " + expr + ";\n";
                 sb.append(s);
                 i++;
             }
         }
 
-        /*for(int i = 0, k=0; i<assignOp.idList.size(); i++, k++) {
-            Expr e = assignOp.exprList.get(i);
-            String expr = (String) e.accept(this);
-
-            //se e è una funzione
-            if(e instanceof  FunCallOp){
-                FunCallOp f = (FunCallOp) e;
-                int paramListSize = f.exprList.size();
-                List<Type> retTypesList = funcMap.get(f.funName.idName);
-                int retTypes = retTypesList.size();
-                if(retTypes == 1) {
-                    //se la funzione restituisce un valore
-                    String s = "\t" + assignOp.idList.get(i).idName + " = " + expr + ";\n";
-                    sb.append(s);
-                }else{
-                    //se la funzione restituisce più valori
-                    i+=retTypes;
-                    for(int j=0 ; j<retTypes ; j++){
-                        //dichiaro le variabili che saranno passate come puntatore int p0; ...
-                        Type t = retTypesList.get(j);
-                        String varPoint = "p"+j;
-                        varPointers = new ArrayList<>();
-                        varPointers.add(varPoint);
-                        String p = "\t"+transformVariables(t, "") + " "+varPoint+ ";\n";
-                        sb.append(p);
-                    }
-                    String exprSubString = expr.substring(0,expr.length()-1); //prendo la chiamata a funzione senza la parentesi finale
-                    sb.append("\t"+exprSubString);
-                    if(paramListSize>0)
-                        sb.append(", ");
-                    //aggiungo dei puntatori alla chiamata a funzione
-                    for(int j=0 ; j<retTypes ; j++){
-                        String s = "&"+varPointers.get(j);
-                        sb.append(s);
-                        if(j != retTypes-1)
-                            sb.append(", ");
-                    }
-                    sb.append(");\n");
-                    StringBuffer sa = new StringBuffer();
-                    for(int j=0; j<retTypes; j++){
-                        String a = "\t"+assignOp.idList.get(k).idName + " = ";
-                        sa.append(a);
-                        sa.append(varPointers.get(indexVarPointer));
-                        sa.append(";\n");
-                        k++;
-                        indexVarPointer++;
-                    }
-
-                    sb.append(sa);
-                }
-            }else{
-                //se non è una funzione
-                String s = "\t" + assignOp.idList.get(i).idName + " = " + expr + ";\n";
-                sb.append(s);
-            }
-
-        }*/
-
-        //a ^= func(); -> a = func();  func ha un sono val di ritorno
-        //a, b ^= func(); -> a = *p1; b = *p2;
         return sb.toString();
     }
 
@@ -448,7 +434,17 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(Id id) {
-        return id.idName;
+
+        if(idMap.containsKey(id.getFunProcName())) {
+            if(idMap.get(id.getFunProcName()).contains(id.idName)){
+                return "*" + id.idName + "_out";
+            } else {
+                return id.idName;
+            }
+        } else  {
+            return id.idName;
+        }
+
     }
 
     @Override
@@ -477,88 +473,94 @@ public class CVisitor implements Visitor{
         return sb.toString();
     }
 
-
-
-
     @Override
     public Object visit(MinusOp minusOp) {
-        return null;
+        StringBuffer sb = new StringBuffer();
+        String s = (String) minusOp.rightNode.accept(this);
+        sb.append("-"+s);
+        return sb.toString();
     }
 
     @Override
     public Object visit(NotOp notOp) {
-        return null;
+        StringBuffer sb = new StringBuffer();
+        String s = (String) notOp.rightNode.accept(this);
+        sb.append("!"+s);
+        return sb.toString();
     }
 
-    @Override
-    public Object visit(ProcExpr procExpr) {
-        return null;
+    private String writeBinaryExpr(BinaryExpr e, String symbol) {
+        StringBuffer sb = new StringBuffer();
+        String s = (String) e.leftNode.accept(this);
+        String s1 = (String) e.rightNode.accept(this);
+        sb.append(s + symbol + s1);
+        return sb.toString();
     }
 
     @Override
     public Object visit(AddOp addOp) {
-        return null;
+        return writeBinaryExpr(addOp, "+");
     }
 
     @Override
     public Object visit(AndOp andOp) {
-        return null;
+        return writeBinaryExpr(andOp, "&&");
     }
 
     @Override
     public Object visit(DiffOp diffOp) {
-        return null;
+        return writeBinaryExpr(diffOp, "-");
     }
 
     @Override
     public Object visit(DivOp divOp) {
-        return null;
+        return writeBinaryExpr(divOp, "/");
     }
 
     @Override
     public Object visit(EqOp eqOp) {
-        return null;
+        return writeBinaryExpr(eqOp, "=");
     }
-
     @Override
     public Object visit(GeOp geOp) {
-        return null;
+        return writeBinaryExpr(geOp, ">=");
     }
 
     @Override
     public Object visit(GtOp gtOp) {
-        return null;
+        return writeBinaryExpr(gtOp, ">");
     }
 
     @Override
     public Object visit(LeOp leOp) {
-        return null;
+        return writeBinaryExpr(leOp, "<=");
     }
 
     @Override
     public Object visit(LtOp ltOp) {
-        return null;
+        return writeBinaryExpr(ltOp, "<");
     }
 
     @Override
     public Object visit(MulOp mulOp) {
-        return null;
+        return writeBinaryExpr(mulOp, "*");
     }
 
     @Override
     public Object visit(NeOp neOp) {
-        return null;
+        return writeBinaryExpr(neOp, "<>");
     }
 
     @Override
     public Object visit(OrOp orOp) {
-        return null;
+        return writeBinaryExpr(orOp, "||");
     }
 
-    @Override
-    public Object visit(ProcCallOp procCallOp) {
-        return null;
-    }
+
+
+
+
+
 
     @Override
     public Object visit(ElifOp elifOp) {
