@@ -249,6 +249,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
             if(exprDX!=null && (idsSX.size() == exprDX.size())){
                 for(int i = 0 ; i<idsSX.size(); i++){
                     //L'assegnazione è possibile solo tra tipi uguali
+                    //TODO tra tipi uguali ?
                     if(idsSX.get(i).getNodeType() != exprDX.get(i)){
                         throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
                     }

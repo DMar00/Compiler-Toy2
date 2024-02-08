@@ -1,20 +1,16 @@
-var x:integer;\
-var y,z:integer;\
-var w:integer; u:real;\
-var e^=5;\
-var f,g^=5,5.3;\
-
-
 proc main():
-    var c : boolean ;\
-    var pippo ^= "ciao";\
-    e, w ^= 7, 2;
-    %f, e ^= bau(5, 5.7);%
+    var a, b , c , d , e , f , g, h, j : integer;\
+    var u : real;\
+
+    %a, b , c, d ^= bau(e, u), bau(e,u);%
+
+    e, f ^= miao(e,e), 5 ;
+
 endproc
 
-proc miao(x:integer, out n:real, b:boolean, out s:string):
-
-endproc
+func miao(x:integer, y:integer)-> integer:
+    return 5;
+endfunc
 
 func bau(belzebu : integer, satan : real) -> integer, integer:
     %return 7;%

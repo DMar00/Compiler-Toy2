@@ -30,12 +30,24 @@ import main.table.SymbolItemType;
 import main.table.SymbolNode;
 import main.table.SymbolTable;
 import main.utils.Utils;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SemanticVisitorFirstVisit extends SemanticVisitorAbstract implements Visitor {
+
+    //Serve per avere già una lista di funzioni con relativi tipi di ritorno
+    //che ci servono nel CVisitor per gestire ad esempio i return multipli , etc..
+    private HashMap<String, List<Type>> funcMap;
+
     public SemanticVisitorFirstVisit() {
         activeSymbolTable = new SymbolTable();
+        funcMap = new HashMap<>();
+    }
+
+    public HashMap<String, List<Type>> getFuncMap() {
+        return funcMap;
     }
 
     /*----------------------------------------------------------------------------------------*/
@@ -185,6 +197,8 @@ public class SemanticVisitorFirstVisit extends SemanticVisitorAbstract implement
         String funcName = funcId.idName;
         List<ProcFunParamOp> funParameters = funDeclOp.functionParamList;
         List<Type> funReturnTypes = funDeclOp.functionReturTypeList;
+        funcMap.put(funcName, funReturnTypes);  //RICORDA : serve per il CVisitor
+
 
         //verifico che non ci sia altro definito con lo stesso nome
         /*if(activeSymbolTable.probe(funcName)){

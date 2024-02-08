@@ -2,6 +2,7 @@ package main.testers;
 
 import main.output_cup.Parser;
 import main.output_jflex.Lexer;
+import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.ProgramOp;
 import main.syntaxtree.visitor.CVisitor;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorFirstVisit;
@@ -10,6 +11,8 @@ import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorSecondVisit;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
+import java.util.List;
+import java.util.Map;
 
 public class Toy2ToC {
     public static void main(String[] args) throws FileNotFoundException {
@@ -35,7 +38,9 @@ public class Toy2ToC {
             astRoot.accept(scopingVisitor2);
 
             //Visitor C
-            CVisitor cVisitor = new CVisitor();
+            for (Map.Entry<String, List<Type>> m : scopingVisitor.getFuncMap().entrySet())
+                System.out.println(m);
+            CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap());
             astRoot.accept(cVisitor);
 
 
