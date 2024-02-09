@@ -92,7 +92,8 @@ public class CVisitor implements Visitor{
         //3. programma
         resultProgram.append(sb);
 
-        System.out.println(resultProgram);
+        //TODO delete print
+        //System.out.println(resultProgram);
         return null;
     }
 

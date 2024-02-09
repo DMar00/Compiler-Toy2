@@ -8,10 +8,7 @@ import main.syntaxtree.visitor.CVisitor;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorFirstVisit;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorSecondVisit;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.Reader;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -47,24 +44,32 @@ public class Toy2ToC {
 
             Path percorso = Paths.get(args[0]);
             String fileName = percorso.getFileName().toString();
-            String cFileName = "c_" + fileName ;
-            cVisitor.printToFile("cOut/"+cFileName+ ".c");
+            String cFileName = "c_" + fileName.substring(0,fileName.length()-4) ;
+            String cFileNamePlusExtension = cFileName+".c";
+            cVisitor.printToFile("cOut/"+cFileNamePlusExtension);
 
 
-
-            File infile = new File("cOut/"+cFileName+ ".c");
-            String dirPath = infile.getParent();
-            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+".exe", cFileName);
-            builder.directory(new File(dirPath));
+            //ESECUZIONE DI GCC PER CREARE IL FILE OUTPUT.EXE A PARTIRE DAL FILE.C
+            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", "output.exe", cFileNamePlusExtension);
+            builder.directory(new File("cOut"));
             builder.redirectErrorStream(true);
             Process p = builder.start();
+
             Scanner sc = new Scanner(p.getInputStream());
             if (sc.hasNextLine()) {
-                System.out.println("C compiler output...\n");
                 while (sc.hasNextLine()) {
                     String line = sc.nextLine();
                     System.out.println(line);
                 }
+            }
+
+            //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
+            ProcessBuilder processBuilder = new ProcessBuilder("cOut/"+"output.exe");
+            Process process = processBuilder.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line); // Stampa l'output nel terminale
             }
 
 
