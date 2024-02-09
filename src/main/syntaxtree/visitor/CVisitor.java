@@ -93,7 +93,7 @@ public class CVisitor implements Visitor{
         resultProgram.append(sb);
 
         //TODO delete print
-        //System.out.println(resultProgram);
+        System.out.println(resultProgram);
         return null;
     }
 
@@ -645,67 +645,91 @@ public class CVisitor implements Visitor{
         }
     }
 
-    @Override
-    public Object visit(IOArgsOp ioArgsOp) {
+    private String visitWrite(IOArgsOp ioArgsOp){
         StringBuffer sb = new StringBuffer();
         StringBuffer sbExpr = new StringBuffer();
         StringBuffer sbDollarId = new StringBuffer();
-
         ArrayList<String> dollarIdList = new ArrayList<>();
 
+        //scorro ioExpr
         if(ioArgsOp.exprList != null) {
             for(IOArgsOp.IoExpr e: ioArgsOp.exprList) {
-                if(e.dollarMode()) {
+                //readExpr.add(e);
+                if(e.dollarMode()) {//se l'expr è nel $()
+                    e.expression().setFunProcName(ioArgsOp.getFunProcName());
+
                     String dollarId = (String) e.expression().accept(this);
-                    dollarIdList.add(dollarId);
+                    dollarIdList.add(dollarId); //aggiungo le variabili che vanno messe dopo la virgola nella printf
                     String type = String.valueOf(e.expression().getNodeType());
                     String ft = getFormatSpecifier(type);
-                    sbExpr.append(ft);
-                } else {
+                    sbExpr.append(ft);  //aggiungo segnaposto per la printf
+                } else { //se l'expr è fuori dal $()
                     String s = (String) e.expression().accept(this);
-                    sbExpr.append(s.substring(1,s.length()-1));
+                    sbExpr.append(s.substring(1,s.length()-1)); //prendo la stringa senza virgolette esterne
                 }
             }
 
             for(int i=0; i<dollarIdList.size(); i++) {
-                if(ioArgsOp.mode == IOMode.READ) {
-                    sbDollarId.append("&");
-                }
+                //printf("...", x, y , z) --> andiamo a costruire la parte [x, y , z]
                 sbDollarId.append(dollarIdList.get(i));
                 if(i<dollarIdList.size()-1)
                     sbDollarId.append(", ");
             }
-
         }
 
-        if(ioArgsOp.mode == IOMode.WRITE || ioArgsOp.mode == IOMode.WRITERETURN) {
-            String nl;
-            if(ioArgsOp.mode == IOMode.WRITERETURN) {
-                nl="\\n";
-            }else{
-                nl = "";
-            }
 
-            if(sbDollarId.length() == 0) {
-                String s = "printf(\"" +sbExpr+ nl + "\");\n";
-                sb.append(s);
-            } else {
-                String s = "printf(\"" +sbExpr+ nl +"\", " + sbDollarId + ");\n";
-                sb.append(s);
-            }
-
-        } else if (ioArgsOp.mode == IOMode.READ) {
-            if(sbDollarId.length() == 0) {
-                String s = "printf(\"" +sbExpr + "\");\n";
-                sb.append(s);
-            } else {
-                String s = "scanf(\"" +sbExpr +"\", " + sbDollarId + ");\n";
-                sb.append(s);
-            }
-
+        String nl;
+        if(ioArgsOp.mode == IOMode.WRITERETURN) {   //ci serve per far andare a capo se -->!
+            nl="\\n";
+        }else{
+            nl = "";
         }
+
+        //se non ci sono segnaposti non mettiamo la parte con la virgola nella printf
+        if(sbDollarId.length() == 0) {
+            String s = "printf(\"" +sbExpr+ nl + "\");\n";
+            sb.append(s);
+        } else {//se ci sono segnaposti  mettiamo la parte dopo la virgola nella printf
+            String s = "printf(\"" +sbExpr+ nl +"\", " + sbDollarId + ");\n";
+            sb.append(s);
+        }
+
 
         return sb.toString();
+    }
+
+
+    private String visitRead(IOArgsOp ioArgsOp){
+        StringBuffer sb = new StringBuffer();
+
+        for(IOArgsOp.IoExpr e : ioArgsOp.exprList) {
+            String expr = (String) e.expression().accept(this);
+            if(e.dollarMode()) {
+                e.expression().setFunProcName(ioArgsOp.getFunProcName());
+                String dollarId = (String) e.expression().accept(this);
+                String type = String.valueOf(e.expression().getNodeType());
+                String ft = getFormatSpecifier(type);
+                //TODO controllo puntatore e stringa sul nn mettere &
+                String param = "&" + dollarId;
+                String s = "scanf(\"" + ft + "\", " + param + ");\n";
+                sb.append(s);
+            } else {
+                String exprSub = expr.substring(1, expr.length()-1);
+                String s = "printf(\"" + exprSub + "\");\n";
+                sb.append(s);
+            }
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public Object visit(IOArgsOp ioArgsOp) {
+        if(ioArgsOp.mode == IOMode.WRITE || ioArgsOp.mode == IOMode.WRITERETURN) {
+            return visitWrite(ioArgsOp);
+        } else if (ioArgsOp.mode == IOMode.READ) {
+            return visitRead(ioArgsOp);
+        }
+        return null;
     }
 
     @Override

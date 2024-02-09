@@ -23,6 +23,8 @@ proc muu(x:integer, out y:integer):
     y ^= 5;
     x ^= 3;
 
-    <-- "ciao";
+    --> "ciao" + "miao" $(x) $(y);
+
+    <-- "ciao" + "bau" $(x) "miao" $(y);
 
 endproc
