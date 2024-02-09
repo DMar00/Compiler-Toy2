@@ -29,10 +29,6 @@ void bau (int belzebu, float satan, int  *p0, int  *p1){
 void muu(int x, int *y_out){
 	*y_out = 5;
 	x = 3;
-printf("ciaomiao%d%d", x, *y_out);
-printf("ciaobau");
-scanf("%d", &x);
-printf("miao");
-scanf("%d", &*y_out);
+	muu(x, y_out);
 
 }

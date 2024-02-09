@@ -23,8 +23,23 @@ proc muu(x:integer, out y:integer):
     y ^= 5;
     x ^= 3;
 
+    muu(x, @y);
+
+    %if y<3 then
+        y, x ^=3, y;
+
+    elseif y<>7 then
+        x^=y;
+    else
+        y^=0;
+    endif;
+
+    while y>3 do
+      y ^= 6;
+    endwhile;
+
     --> "ciao" + "miao" $(x) $(y);
 
-    <-- "ciao" + "bau" $(x) "miao" $(y);
+    <-- "ciao" + "bau" $(x) "miao" $(y);%
 
 endproc

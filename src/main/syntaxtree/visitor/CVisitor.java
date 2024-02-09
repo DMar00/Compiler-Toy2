@@ -71,6 +71,23 @@ public class CVisitor implements Visitor{
         }
     }
 
+    private String getFormatSpecifier(String type) {
+        switch (type) {
+            case "integer", "boolean" -> {
+                return "%d";
+            }
+            case "real" -> {
+                return "%f";
+            }
+            case "string" -> {
+                return "%s";
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
     /********************************************************************************/
 
     @Override
@@ -251,6 +268,7 @@ public class CVisitor implements Visitor{
         StringBuffer sbParams = new StringBuffer();
         List<ProcExpr> procParams = procCallOp.exprList;
         for(int i=0; i<procParams.size(); i++){
+            procParams.get(i).expr.setFunProcName(procCallOp.getFunProcName());
             String p = (String) procParams.get(i).accept(this);
             sbParams.append(p);
             if(i<procParams.size()-1){
@@ -268,7 +286,10 @@ public class CVisitor implements Visitor{
         StringBuffer sb = new StringBuffer();
         String e = (String) procExpr.expr.accept(this);
         if(procExpr.procMode) {
-            sb.append("&" + e);
+            if(e.charAt(0) == '*')
+                sb.append(e.substring(1, e.length()));
+            else
+                sb.append("&" + e);
         } else {
             sb.append(e);
         }
@@ -287,6 +308,7 @@ public class CVisitor implements Visitor{
             Id id = assignOp.idList.get(i);
             assignOp.idList.get(i).setFunProcName(assignOp.getFunProcName());
             Expr e = assignOp.exprList.get(j);
+            e.setFunProcName(assignOp.getFunProcName());
             String expr = (String) e.accept(this);
 
             //se e è una funzione
@@ -447,7 +469,6 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(Id id) {
-
         if(idMap.containsKey(id.getFunProcName())) {
             if(idMap.get(id.getFunProcName()).contains(id.idName)){
                 return "*" + id.idName + "_out";
@@ -489,6 +510,7 @@ public class CVisitor implements Visitor{
     @Override
     public Object visit(MinusOp minusOp) {
         StringBuffer sb = new StringBuffer();
+        minusOp.rightNode.setFunProcName(minusOp.getFunProcName());
         String s = (String) minusOp.rightNode.accept(this);
         sb.append("-"+s);
         return sb.toString();
@@ -497,6 +519,7 @@ public class CVisitor implements Visitor{
     @Override
     public Object visit(NotOp notOp) {
         StringBuffer sb = new StringBuffer();
+        notOp.rightNode.setFunProcName(notOp.getFunProcName());
         String s = (String) notOp.rightNode.accept(this);
         sb.append("!"+s);
         return sb.toString();
@@ -504,6 +527,8 @@ public class CVisitor implements Visitor{
 
     private String writeBinaryExpr(BinaryExpr e, String symbol) {
         StringBuffer sb = new StringBuffer();
+        e.leftNode.setFunProcName(e.getFunProcName());
+        e.rightNode.setFunProcName(e.getFunProcName());
         String s = (String) e.leftNode.accept(this);
         String s1 = (String) e.rightNode.accept(this);
         sb.append(s + symbol + s1);
@@ -568,7 +593,7 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(NeOp neOp) {
-        return writeBinaryExpr(neOp, "<>");
+        return writeBinaryExpr(neOp, "!=");
     }
 
     @Override
@@ -581,7 +606,7 @@ public class CVisitor implements Visitor{
         StringBuffer sb = new StringBuffer();
         StringBuffer sbElifs = new StringBuffer();
         StringBuffer sbElse = new StringBuffer();
-
+        ifOp.expr.setFunProcName(ifOp.getFunProcName());
 
         String s = "if (" + ifOp.expr.accept(this) + ") {\n" + ifOp.ifBody.accept(this) + "\n}";
 
@@ -607,6 +632,7 @@ public class CVisitor implements Visitor{
     @Override
     public Object visit(ElifOp elifOp) {
         StringBuffer sb = new StringBuffer();
+        elifOp.expr.setFunProcName(elifOp.getFunProcName());
         String s = " else if (" + elifOp.expr.accept(this) + ") {\n" + elifOp.bodyOp.accept(this) + "\n}";
         sb.append(s);
         return sb.toString();
@@ -615,6 +641,7 @@ public class CVisitor implements Visitor{
     @Override
     public Object visit(ElseOp elseOp) {
         StringBuffer sb = new StringBuffer();
+        elseOp.elseBody.setFunProcName(elseOp.getFunProcName());
         String s = " else" + "{\n" + elseOp.elseBody.accept(this) + "\n}";
         sb.append(s);
         return sb.toString();
@@ -623,26 +650,11 @@ public class CVisitor implements Visitor{
     @Override
     public Object visit(WhileOp whileOp) {
         StringBuffer sb = new StringBuffer();
+        whileOp.whileExpr.setFunProcName(whileOp.getFunProcName());
+
         String s = "while (" + whileOp.whileExpr.accept(this) + ") {\n" + whileOp.doBody.accept(this) + "\n}";
         sb.append(s);
         return sb.toString();
-    }
-
-    private String getFormatSpecifier(String type) {
-        switch (type) {
-            case "integer", "boolean" -> {
-                return "%d";
-            }
-            case "real" -> {
-                return "%f";
-            }
-            case "string" -> {
-                return "%s";
-            }
-            default -> {
-                return null;
-            }
-        }
     }
 
     private String visitWrite(IOArgsOp ioArgsOp){
@@ -709,8 +721,13 @@ public class CVisitor implements Visitor{
                 String dollarId = (String) e.expression().accept(this);
                 String type = String.valueOf(e.expression().getNodeType());
                 String ft = getFormatSpecifier(type);
-                //TODO controllo puntatore e stringa sul nn mettere &
-                String param = "&" + dollarId;
+                //TODO controllo stringa sul nn mettere &
+                String param;
+                //controllo se il parametro è un puntatore e nel caso tolgo *
+                if(dollarId.charAt(0)=='*')
+                    param = dollarId.substring(1, dollarId.length());
+                else
+                    param = "&" + dollarId;
                 String s = "scanf(\"" + ft + "\", " + param + ");\n";
                 sb.append(s);
             } else {
