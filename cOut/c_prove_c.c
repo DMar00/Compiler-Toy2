@@ -3,15 +3,15 @@ int  miao (int x, int y);
 void bau (int belzebu, float satan, int  *p0, int  *p1);
 void muu(int x, int *y_out);
 int main(){
-	int  g ;
-	int  j ;
-	int  f ;
-	int  c ;
-	int  e ;
-	int  d ;
-	int  a ;
-	int  b ;
 	int  h ;
+	int  g ;
+	int  d ;
+	int  f ;
+	int  e ;
+	int  b ;
+	int  a ;
+	int  c ;
+	int  j ;
 	float  u ;
 	e = miao(e, e);
 	f = 5+d;
@@ -27,8 +27,12 @@ void bau (int belzebu, float satan, int  *p0, int  *p1){
 
 }
 void muu(int x, int *y_out){
+	char [256] s1 ;
 	*y_out = 5;
 	x = 3;
 	muu(x, y_out);
+printf("isjdsjd ");
+scanf("%s", &s1);
+printf("cacca oh !");
 
 }

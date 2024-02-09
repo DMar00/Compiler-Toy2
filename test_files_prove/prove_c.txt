@@ -42,4 +42,8 @@ proc muu(x:integer, out y:integer):
 
     <-- "ciao" + "bau" $(x) "miao" $(y);%
 
+
+    var s1:string;\
+    <-- "isjdsjd " $(s1) "cacca oh !";
+
 endproc

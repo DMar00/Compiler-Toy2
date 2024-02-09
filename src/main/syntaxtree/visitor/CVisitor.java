@@ -266,7 +266,7 @@ public class CVisitor implements Visitor{
     public Object visit(ProcCallOp procCallOp) {
         StringBuffer sb = new StringBuffer();
         StringBuffer sbParams = new StringBuffer();
-         List<ProcExpr> procParams = procCallOp.exprList;
+        List<ProcExpr> procParams = procCallOp.exprList;
         for(int i=0; i<procParams.size(); i++){
             procParams.get(i).expr.setFunProcName(procCallOp.getFunProcName());
             String p = (String) procParams.get(i).accept(this);
