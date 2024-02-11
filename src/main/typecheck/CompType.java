@@ -9,6 +9,15 @@ import main.syntaxtree.nodes.expr.unExpr.UnaryExpr;
 public class CompType {
     //typeSystem
 
+    public static boolean areCompatibleTypes(Type t1, Type t2){
+        if(t1 == t2) return true;
+        else{
+            if(t1 == Type.INTEGER && t2 == Type.REAL) return true;
+            else if (t1 == Type.REAL && t2 == Type.INTEGER) return true;
+            else return false;
+        }
+    }
+
     public static Type getTypeFromBinaryExpr(BinaryExpr expr){
         if(expr instanceof AddOp || expr instanceof DiffOp || expr instanceof MulOp || expr instanceof DivOp)
             return getTypeFromNumericExpr(expr);

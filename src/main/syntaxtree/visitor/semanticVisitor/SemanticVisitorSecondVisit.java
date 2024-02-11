@@ -248,12 +248,13 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
             //di parametri giusto per l'assegnazione, quindi possiamo controllare i tipi
             if(exprDX!=null && (idsSX.size() == exprDX.size())){
                 for(int i = 0 ; i<idsSX.size(); i++){
-                    //L'assegnazione è possibile solo tra tipi uguali
-                    //TODO tra tipi uguali ?
-                    if(idsSX.get(i).getNodeType() != exprDX.get(i)){
+                    //L'assegnazione è possibile solo tra tipi compatibili
+                    if(!CompType.areCompatibleTypes(idsSX.get(i).getNodeType(), exprDX.get(i))){
                         throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
                     }
-
+                    /*if(idsSX.get(i).getNodeType() != exprDX.get(i)){
+                        throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
+                    }*/
                 }
             }else {
                 throw new MismatchedParameterCount();
@@ -332,9 +333,13 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                         idProcParam = "Expr";
 
 
-                    //controllo che i tipi coincidano
-                    if(! (procParam.get(i).expr.getNodeType() == paramsFound.get(i).type))
+                    //controllo che i tipi siano compatibili
+                    if(!CompType.areCompatibleTypes(procParam.get(i).expr.getNodeType(), paramsFound.get(i).type))
                         throw new InvalidParameterType(SymbolItemType.PROCEDURE.toString(), procName, paramsFound.get(i).type.toString(), procParam.get(i).expr.getNodeType().toString());
+
+                    /*if(! (procParam.get(i).expr.getNodeType() == paramsFound.get(i).type))
+                        throw new InvalidParameterType(SymbolItemType.PROCEDURE.toString(), procName, paramsFound.get(i).type.toString(), procParam.get(i).expr.getNodeType().toString());
+                    */
                     //controllo che se c'è @ allora il paramsFound(i) c'è MODE = OUT
                     //e che dopo @ ci sia un id
                     if(procParam.get(i).procMode){  //false = noRif (per valore), true = per riferimento
@@ -441,9 +446,14 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                         idProcParam = ((Id)funParams.get(i)).idName;
                     else
                         idProcParam = "Expr";
-                    //controllo che i tipi coincidano
-                    if(! (funParams.get(i).getNodeType() == paramsFound.get(i).type))
+
+                    //controllo che i tipi siano compatibili
+                    if(!CompType.areCompatibleTypes(funParams.get(i).getNodeType(), paramsFound.get(i).type))
                         throw new InvalidParameterType(SymbolItemType.FUNCTION.toString(), funName, paramsFound.get(i).type.toString(), funParams.get(i).getNodeType().toString());
+
+                    /*if(! (funParams.get(i).getNodeType() == paramsFound.get(i).type))
+                        throw new InvalidParameterType(SymbolItemType.FUNCTION.toString(), funName, paramsFound.get(i).type.toString(), funParams.get(i).getNodeType().toString());
+                     */
                 }
             }else{
                 throw new MismatchedParameterCountCall(SymbolItemType.FUNCTION.toString(), funName, sizeParamFound, sizeParam);
@@ -460,8 +470,12 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         for(Expr e: returnOp.exprList){
             e.accept(this);
 
-            //TODO non si possono passare nel return e anche nelle espressioni che non siano parte destra
+            //non si possono passare nel return e anche nelle espressioni che non siano parte destra
             // di un assegnazione le chiamate a funzione che restituiscono piu valori
+            if(e instanceof FunCallOp){
+                FunCallOp f = (FunCallOp) e;
+                checkIfFunctionReturnMoreValue(f);
+            }
 
             exprTypes.add(e.getNodeType());
         }
@@ -479,8 +493,10 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                 throw new MismatchedReturnCount(returnProcFun, returnTypeFound.size(), exprTypes.size());
             else{
                 for(int i=0 ; i<returnTypeFound.size(); i++){
-                    if(exprTypes.get(i) != returnTypeFound.get(i))  //TODO tipi uguali o compatibili?
+                    if(!CompType.areCompatibleTypes(exprTypes.get(i), returnTypeFound.get(i)))
                         throw new MismatchedTypes(exprTypes.get(i).toString(), returnTypeFound.get(i).toString());
+                    /*if(exprTypes.get(i) != returnTypeFound.get(i))
+                        throw new MismatchedTypes(exprTypes.get(i).toString(), returnTypeFound.get(i).toString());*/
                 }
             }
 
@@ -497,6 +513,12 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
     public Object visit(ElifOp elifOp) {
         //entro scope if
         activeSymbolTable.enterSpecificScope(setProgressiveName("elif"));
+
+        //mi assicuro che espressione se è una chiamata a funzione non restitusca più valori
+        if(elifOp.expr instanceof FunCallOp){
+            FunCallOp f = (FunCallOp) elifOp.expr;
+            checkIfFunctionReturnMoreValue(f);
+        }
 
         //mi assicuro che espressione sia booleana, e la visito
         elifOp.expr.accept(this);
@@ -519,6 +541,12 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
     public Object visit(IfOp ifOp) {
         //entro scope if
         activeSymbolTable.enterSpecificScope(setProgressiveName("if"));
+
+        //mi assicuro che espressione se è una chiamata a funzione non restitusca più valori
+        if(ifOp.expr instanceof FunCallOp){
+            FunCallOp f = (FunCallOp) ifOp.expr;
+            checkIfFunctionReturnMoreValue(f);
+        }
 
         //mi assicuro che espressione sia booleana, e la visito
         ifOp.expr.accept(this);
@@ -603,6 +631,12 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         //entro scope while
         activeSymbolTable.enterSpecificScope(setProgressiveName("while"));
 
+        //mi assicuro che espressione se è una chiamata a funzione non restitusca più valori
+        if(whileOp.whileExpr instanceof FunCallOp){
+            FunCallOp f = (FunCallOp) whileOp.whileExpr;
+            checkIfFunctionReturnMoreValue(f);
+        }
+
         //mi assicuro che espressione sia booleana, e la visito
         whileOp.whileExpr.accept(this);
         if(whileOp.whileExpr.getNodeType() != Type.BOOLEAN){
@@ -627,6 +661,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
         if(mode == IOMode.READ){    //  <--
             for(IOArgsOp.IoExpr e : exprList){
+                /*if(e.expression() instanceof FunCallOp){
+                    FunCallOp f = (FunCallOp) e.expression();
+                    checkIfFunctionReturnMoreValue(f);
+                }*/
+
                 if(e.dollarMode()){
                     e.expression().accept(this);
                     if(!(e.expression() instanceof Id)){
@@ -648,6 +687,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
         if(mode == IOMode.WRITE || mode == IOMode.WRITERETURN){  // -->
             for(IOArgsOp.IoExpr e : exprList) {
+                if(e.expression() instanceof FunCallOp){
+                    FunCallOp f = (FunCallOp) e.expression();
+                    checkIfFunctionReturnMoreValue(f);
+                }
+
                 e.expression().accept(this);
                 if(e.dollarMode()){
 

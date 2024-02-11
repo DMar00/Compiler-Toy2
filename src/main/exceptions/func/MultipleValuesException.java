@@ -2,6 +2,6 @@ package main.exceptions.func;
 
 public class MultipleValuesException extends RuntimeException{
     public MultipleValuesException(String id) {
-        super("The function "+id+" returns multiple values when only one is expected !");
+        super("If a function call is included, it must return only a single value [function "+id+" returns multiple values] !");
     }
 }

@@ -60,13 +60,13 @@ public class Toy2ToC {
             }
 
             //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
-            /*ProcessBuilder processBuilder = new ProcessBuilder("cOut/"+"output.exe");
+            ProcessBuilder processBuilder = new ProcessBuilder("cOut/"+"output.exe");
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
                 System.out.println(line); // Stampa l'output nel terminale
-            }*/
+            }
 
 
         } catch (Exception e) {

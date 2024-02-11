@@ -1,38 +1,27 @@
 #include <stdio.h>
-int  miao (int x, int y);
-void bau (int belzebu, float satan, int  *p0, int  *p1);
-void muu(int x, int *y_out);
+#include <string.h>
+#include <stdlib.h>
+
+void prova (int x, char *p0, int *p1);
+char * prova2 ();
+
 int main(){
-	int  h ;
-	int  g ;
-	int  d ;
-	int  f ;
-	int  e ;
-	int  b ;
-	int  a ;
-	int  c ;
-	int  j ;
-	float  u ;
-	e = miao(e, e);
-	f = 5+d;
-	muu(e, &f);
+	int  i ;
+	float  f ;
+i = f;
+f = f;
 
 }
-int  miao (int x, int y){
-	return 5;
-}
-void bau (int belzebu, float satan, int  *p0, int  *p1){
-	*p0 = 77;
-	*p1 = 66;
+void prova (int x, char *p0, int *p1){
+	char * y  = strdup("");
+	int  i ;
+free(y);
+y = strdup(y);
+i = i;
+	free(p0);	p0 = strdup(y);
+	*p1 = i;
 
 }
-void muu(int x, int *y_out){
-	char [256] s1 ;
-	*y_out = 5;
-	x = 3;
-	muu(x, y_out);
-printf("isjdsjd ");
-scanf("%s", &s1);
-printf("cacca oh !");
-
+char * prova2 (){
+	return "cocco bello";
 }
