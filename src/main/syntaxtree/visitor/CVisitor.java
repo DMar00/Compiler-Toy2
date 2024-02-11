@@ -8,6 +8,8 @@ import main.syntaxtree.nodes.expr.constNodes.*;
 import main.syntaxtree.nodes.expr.unExpr.*;
 import main.syntaxtree.nodes.iter.*;
 import main.syntaxtree.nodes.stat.*;
+import main.typecheck.CompType;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,13 +23,20 @@ public class CVisitor implements Visitor{
     private StringBuffer resultProgram;
     //lista firme funzioni
     private StringBuffer procFunSigns;
-
+    //lista varibili globali
+    private StringBuffer globalVariables;
+    //mappa che tiene traccia per ogni funzione dei tipi dei valori di ritorno
+    private HashMap<String, List<Type>> funcMap;
+    //mappa che tiene traccia per ogni procedura dei tipi dei parametri
+    private HashMap<String, List<Type>> procMap;
 
     //Costruttore
-    public CVisitor(HashMap<String, List<Type>> funcMap) {
+    public CVisitor(HashMap<String, List<Type>> funcMap, HashMap<String, List<Type>> procMap) {
         resultProgram =new StringBuffer();
         procFunSigns = new StringBuffer();
+        globalVariables = new StringBuffer();
         idMap = new HashMap<>();
+        this.procMap = procMap;
         this.funcMap = funcMap;
         pointerCount = 0;
     }
@@ -87,8 +96,7 @@ public class CVisitor implements Visitor{
 
 
 
-    //mappa che tiene traccia per ogni funzione...
-    private HashMap<String, List<Type>> funcMap;
+
     //mappa che tiene traccia per ogni funzione ...
     private HashMap<String, List<String>> idMap;
     /**/
@@ -164,7 +172,11 @@ public class CVisitor implements Visitor{
         resultProgram.append(procFunSigns);
         resultProgram.append("\n");
 
-        //3. programma
+        //3. variabili globali
+        resultProgram.append(globalVariables);
+        resultProgram.append("\n");
+
+        //4. programma
         resultProgram.append(sb);
 
         //TODO delete print
@@ -226,7 +238,14 @@ public class CVisitor implements Visitor{
             sb.append(";\n");
         }
 
-        return sb.toString();
+
+        //Se le variabili sono dichiarate globalmente le inserisco in globalVariables
+        //in modo da essere dichiarate tutte in alto
+        if(varDeclOp.getFunProcName() == null) {
+            globalVariables.append(sb);
+            return "";
+        }else
+            return sb.toString();
     }
 
 
@@ -236,6 +255,7 @@ public class CVisitor implements Visitor{
         StringBuffer sb =new StringBuffer();
 
         for(VarDeclOp v : bodyOp.varDeclOpList) {
+            ((Node)v).setFunProcName(bodyOp.getFunProcName());
             String var = (String) v.accept(this);
             sb.append(var);
         }
@@ -461,23 +481,55 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(ProcCallOp procCallOp) {
+        int tCount = 0;
         StringBuffer sb = new StringBuffer();
         StringBuffer sbParams = new StringBuffer();
         List<ProcExpr> procParams = procCallOp.exprList;
 
+        //List<> tempVariable = new ArrayList<>();
+        StringBuffer tempVar = new StringBuffer();
+        StringBuffer assignVar = new StringBuffer();
         //concateno parametri in chiamata a procedura separati da virgola
         for(int i=0; i<procParams.size(); i++){
             //setto nome procedura al parametro
             procParams.get(i).expr.setFunProcName(procCallOp.getFunProcName());
+
+            //proc("ciao"+" bau", 3) --> proc("ciao bau", 3);
+            if((procParams.get(i).expr instanceof AddOp))
+                ((AddOp)procParams.get(i).expr).setInPrintOrRead(true);
+
             String p = (String) procParams.get(i).accept(this);
-            sbParams.append(p);
+
+            boolean paramReference = procParams.get(i).procMode;
+            if(paramReference){
+                Type paramInputType = procParams.get(i).getNodeType();
+                Type paramExpectedType = procMap.get(procCallOp.procName.idName).get(i);
+                if(paramInputType == Type.INTEGER && paramExpectedType == Type.REAL){
+                    String p1 = p.substring(1); //tolgo la & davanti al paramentro
+                    String v = transformVariables(paramExpectedType,"")+" t"+tCount+" = " + p1 + ";\n";
+                    sbParams.append("&t"+tCount);   //aggiungo parametro temp ai parametri
+                    tempVar.append(v);  //aggiungo al buffer varTemp ad esempio float t0 = id;
+                    String v2 = p1 + " = t"+tCount+";\n";
+                    assignVar.append(v2); //aggiungo al buffer assingVar ad esempio id = t0;
+                    tCount++;
+                }else{
+                    sbParams.append(p);
+                }
+            }else{
+                sbParams.append(p);
+            }
+
+            //sbParams.append(p);
+
             if(i<procParams.size()-1){
                 sbParams.append(", ");
             }
         }
 
+        sb.append(tempVar);
         String s = "\t" + procCallOp.procName.idName + "(" + sbParams+ ");\n";
         sb.append(s);
+        sb.append(assignVar);
 
         return sb.toString();
     }
@@ -602,6 +654,10 @@ public class CVisitor implements Visitor{
         //accodo separati da virgola i parametri nella chiamata di funzione
         if(funCallOp.exprList != null) {
             for(int i = 0; i<funCallOp.exprList.size(); i++) {
+                //func("ciao"+" bau", 3) --> func("ciao bau", 3);
+                if((funCallOp.exprList.get(i) instanceof AddOp))
+                    ((AddOp)funCallOp.exprList.get(i)).setInPrintOrRead(true);
+
                 String expr = (String) funCallOp.exprList.get(i).accept(this);
                 sbPar.append(expr);
                 if(i<(funCallOp.exprList.size()-1)) {
@@ -840,6 +896,7 @@ public class CVisitor implements Visitor{
         return sb.toString();
     }
 
+    StringBuffer sbStringAppend = new StringBuffer();
     @Override
     public Object visit(AddOp addOp) {
         addOp.leftNode.setFunProcName(addOp.getFunProcName());
@@ -849,8 +906,26 @@ public class CVisitor implements Visitor{
         System.out.println(eLeft + " - "+eRight);
 
         if(addOp.leftNode.getNodeType() == Type.STRING && addOp.rightNode.getNodeType() == Type.STRING) {
-            if(addOp.isInPrintOrRead())
-                return eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
+            if(addOp.isInPrintOrRead()) {
+                //return eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
+                /*StringConstNode leftStringNode = new StringConstNode(eLeft.substring(0, eLeft.length() - 1));
+                StringConstNode rightStringNode = new StringConstNode(eRight.substring(1, eRight.length()));
+                AddOp newAddOp = new AddOp(leftStringNode, rightStringNode);
+                String s = leftStringNode.value + rightStringNode.value;
+                if(rightStringNode != null)
+                    return newAddOp.accept(this);
+                else
+                    return s;*/
+                if(sbStringAppend.isEmpty()){
+                    String s = eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
+                    sbStringAppend.append(s);
+                }else{
+                    //tolgo ultima "
+                    sbStringAppend.delete(0, sbStringAppend.length()-1);
+                    sbStringAppend.append(eRight.substring(1, eRight.length()));
+                }
+                return sbStringAppend.toString();
+            }
             else {
                 return strcat(eLeft, eRight);
             }

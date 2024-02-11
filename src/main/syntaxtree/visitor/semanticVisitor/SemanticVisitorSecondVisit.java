@@ -249,8 +249,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
             if(exprDX!=null && (idsSX.size() == exprDX.size())){
                 for(int i = 0 ; i<idsSX.size(); i++){
                     //L'assegnazione è possibile solo tra tipi compatibili
-                    if(!CompType.areCompatibleTypes(idsSX.get(i).getNodeType(), exprDX.get(i))){
-                        throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
+                    //assegno t2 a t1
+                    Type t1 = idsSX.get(i).getNodeType();
+                    Type t2 = exprDX.get(i);
+                    if(!CompType.areCompatibleTypes(t1, t2)){
+                        throw new MismatchedTypes(t2.toString(), t1.toString());
                     }
                     /*if(idsSX.get(i).getNodeType() != exprDX.get(i)){
                         throw new MismatchedTypes(exprDX.get(i).toString(), idsSX.get(i).getNodeType().toString());
@@ -291,6 +294,8 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         if(procParam != null && procParam.size()>0){
             for(ProcExpr e : procParam){
                 e.accept(this);
+
+                //System.out.println("SEMANTIC PROCCALL--> param type:" + e.getNodeType());
 
                 //verifico che se l'espressione è un id , deve essere un'id di variabile
                 if(e.expr instanceof Id){
@@ -334,8 +339,10 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
 
                     //controllo che i tipi siano compatibili
-                    if(!CompType.areCompatibleTypes(procParam.get(i).expr.getNodeType(), paramsFound.get(i).type))
-                        throw new InvalidParameterType(SymbolItemType.PROCEDURE.toString(), procName, paramsFound.get(i).type.toString(), procParam.get(i).expr.getNodeType().toString());
+                    Type t1 = paramsFound.get(i).type; //quello che vuole
+                    Type t2 = procParam.get(i).expr.getNodeType();  //quello che inserisco
+                    if(!CompType.areCompatibleTypes(t1, t2))
+                        throw new InvalidParameterType(SymbolItemType.PROCEDURE.toString(), procName, t1.toString(), t2.toString());
 
                     /*if(! (procParam.get(i).expr.getNodeType() == paramsFound.get(i).type))
                         throw new InvalidParameterType(SymbolItemType.PROCEDURE.toString(), procName, paramsFound.get(i).type.toString(), procParam.get(i).expr.getNodeType().toString());
@@ -364,6 +371,8 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
     @Override
     public Object visit(ProcExpr procExpr) {
         procExpr.expr.accept(this);
+        procExpr.setNodeType(procExpr.expr.getNodeType());
+        //System.out.println("SEMANTIC PROCEXPR--> param type:" + procExpr.expr.getNodeType());
         return null;
     }
 
@@ -448,8 +457,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                         idProcParam = "Expr";
 
                     //controllo che i tipi siano compatibili
-                    if(!CompType.areCompatibleTypes(funParams.get(i).getNodeType(), paramsFound.get(i).type))
-                        throw new InvalidParameterType(SymbolItemType.FUNCTION.toString(), funName, paramsFound.get(i).type.toString(), funParams.get(i).getNodeType().toString());
+                    Type t1 = paramsFound.get(i).type;  //tipo che la funzione vuole
+                    Type t2 = funParams.get(i).getNodeType();   //tipo che inserisco
+                    //System.out.println("inserisco: "+t2+ " - vuole: "+t1 + " - compatibili? "+ CompType.areCompatibleTypes(t1 , t2));
+                    if(!CompType.areCompatibleTypes(t1 , t2))
+                        throw new InvalidParameterType(SymbolItemType.FUNCTION.toString(), funName, t1.toString(), t2.toString());
 
                     /*if(! (funParams.get(i).getNodeType() == paramsFound.get(i).type))
                         throw new InvalidParameterType(SymbolItemType.FUNCTION.toString(), funName, paramsFound.get(i).type.toString(), funParams.get(i).getNodeType().toString());
@@ -493,8 +505,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                 throw new MismatchedReturnCount(returnProcFun, returnTypeFound.size(), exprTypes.size());
             else{
                 for(int i=0 ; i<returnTypeFound.size(); i++){
-                    if(!CompType.areCompatibleTypes(exprTypes.get(i), returnTypeFound.get(i)))
-                        throw new MismatchedTypes(exprTypes.get(i).toString(), returnTypeFound.get(i).toString());
+                    Type t1 = returnTypeFound.get(i);   //quello che la procedura vuole
+                    Type t2 = exprTypes.get(i);         //quello che inserisco
+                    //System.out.println("vuole: "+t1+" - do: "+t2);
+                    if(!CompType.areCompatibleTypes(t1, t2))
+                        throw new MismatchedTypes(t2.toString(), t1.toString());
                     /*if(exprTypes.get(i) != returnTypeFound.get(i))
                         throw new MismatchedTypes(exprTypes.get(i).toString(), returnTypeFound.get(i).toString());*/
                 }
@@ -686,21 +701,24 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         }
 
         if(mode == IOMode.WRITE || mode == IOMode.WRITERETURN){  // -->
-            for(IOArgsOp.IoExpr e : exprList) {
-                if(e.expression() instanceof FunCallOp){
-                    FunCallOp f = (FunCallOp) e.expression();
-                    checkIfFunctionReturnMoreValue(f);
-                }
+            if(exprList != null){
+                for(IOArgsOp.IoExpr e : exprList) {
+                    if(e.expression() instanceof FunCallOp){
+                        FunCallOp f = (FunCallOp) e.expression();
+                        checkIfFunctionReturnMoreValue(f);
+                    }
 
-                e.expression().accept(this);
-                if(e.dollarMode()){
+                    e.expression().accept(this);
+                    if(e.dollarMode()){
 
-                }else{
-                    if(!(e.expression() instanceof StringConstNode) && !(e.expression().getNodeType() == Type.STRING)) {
-                        throw new RuntimeException("fuori dal $() non può essere un id, gli id vanno dentro $()");
+                    }else{
+                        if(!(e.expression() instanceof StringConstNode) && !(e.expression().getNodeType() == Type.STRING)) {
+                            throw new RuntimeException("fuori dal $() non può essere un id, gli id vanno dentro $()");
+                        }
                     }
                 }
             }
+
         }
 
         return null;

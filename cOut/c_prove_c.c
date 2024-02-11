@@ -2,26 +2,19 @@
 #include <string.h>
 #include <stdlib.h>
 
-void prova (int x, char *p0, int *p1);
-char * prova2 ();
+void prova(char *s, int x);
+char * prova2 (char *s, int x);
+
 
 int main(){
-	int  i ;
-	float  f ;
-i = f;
-f = f;
+	char * s  = strdup("");
+	prova("ciao bau", 3);
+printf(" bau");
 
 }
-void prova (int x, char *p0, int *p1){
-	char * y  = strdup("");
-	int  i ;
-free(y);
-y = strdup(y);
-i = i;
-	free(p0);	p0 = strdup(y);
-	*p1 = i;
+void prova(char *s, int x){
 
 }
-char * prova2 (){
-	return "cocco bello";
+char * prova2 (char *s, int x){
+	return "a";
 }

@@ -4,7 +4,7 @@ import main.syntaxtree.nodes.expr.Expr;
 import main.syntaxtree.visitor.Visitor;
 
 public class AddOp extends BinaryExpr{
-    private boolean inPrintOrRead = false;
+    private boolean inPrintOrRead = false;  //orCall
     public AddOp(Expr leftNode, Expr rightNode) {
         super("AddOp",leftNode, rightNode);
     }

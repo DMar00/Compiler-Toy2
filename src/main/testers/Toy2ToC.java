@@ -2,6 +2,7 @@ package main.testers;
 
 import main.output_cup.Parser;
 import main.output_jflex.Lexer;
+import main.syntaxtree.enums.Type;
 import main.syntaxtree.nodes.ProgramOp;
 import main.syntaxtree.visitor.CVisitor;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorFirstVisit;
@@ -9,6 +10,8 @@ import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorSecondVisit;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Toy2ToC {
@@ -35,7 +38,12 @@ public class Toy2ToC {
             astRoot.accept(scopingVisitor2);
 
             //Visitor C
-            CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap());
+            /*for(Map.Entry<String, List<Type>> entry : scopingVisitor.getProcMap().entrySet()){
+                System.out.println("-->" + entry.getKey());
+                for(Type t : entry.getValue())
+                    System.out.println("\t-->"+t.toString());
+            }*/
+            CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap(), scopingVisitor.getProcMap());
             astRoot.accept(cVisitor);
 
             Path percorso = Paths.get(args[0]);

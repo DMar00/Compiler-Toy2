@@ -31,6 +31,7 @@ import main.table.SymbolNode;
 import main.table.SymbolTable;
 import main.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,13 +42,23 @@ public class SemanticVisitorFirstVisit extends SemanticVisitorAbstract implement
     //che ci servono nel CVisitor per gestire ad esempio i return multipli , etc..
     private HashMap<String, List<Type>> funcMap;
 
+    //Serve per avere già una lista di procedure con relativi tipi dei parametri
+    //che ci servono nel CVisitor per gestire ad esempio se dobbiamo passare per
+    // riferimento un int che dovrebbe essere float invece
+    private HashMap<String, List<Type>> procMap;
+
     public SemanticVisitorFirstVisit() {
         activeSymbolTable = new SymbolTable();
         funcMap = new HashMap<>();
+        procMap = new HashMap<>();
     }
 
     public HashMap<String, List<Type>> getFuncMap() {
         return funcMap;
+    }
+
+    public HashMap<String, List<Type>> getProcMap() {
+        return procMap;
     }
 
     /*----------------------------------------------------------------------------------------*/
@@ -136,12 +147,17 @@ public class SemanticVisitorFirstVisit extends SemanticVisitorAbstract implement
         //creo la tabella dei simboli per questa procedura
         activeSymbolTable.enterScope(procedureName);
 
+        List<Type> procTypes = new ArrayList<>();
         //eseguo controlli parametri
         if(procOp.procParamsList != null){
             for (ProcFunParamOp p : procOp.procParamsList){
                 p.accept(this);
+                procTypes.add(p.type);
             }
         }
+
+
+        procMap.put(procedureName, procTypes);
 
         //aggiungo come nodo figlio la nuova tabella procedure al padre
         activeSymbolTable.addChildToParentScope(activeSymbolTable.getActiveTable());

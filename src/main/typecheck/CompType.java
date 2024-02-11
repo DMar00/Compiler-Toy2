@@ -10,9 +10,10 @@ public class CompType {
     //typeSystem
 
     public static boolean areCompatibleTypes(Type t1, Type t2){
+        //assegno t2 a t1
         if(t1 == t2) return true;
         else{
-            if(t1 == Type.INTEGER && t2 == Type.REAL) return true;
+            if(t1 == Type.INTEGER && t2 == Type.REAL) return false;
             else if (t1 == Type.REAL && t2 == Type.INTEGER) return true;
             else return false;
         }
@@ -52,8 +53,13 @@ public class CompType {
         if(leftType == Type.REAL && rightType == Type.REAL) return Type.REAL;
 
         //concatenazione stringhe
-        if((expr instanceof AddOp) && leftType == Type.STRING && rightType == Type.STRING)
-            return Type.STRING;
+        /*if((expr instanceof AddOp) && leftType == Type.STRING && rightType == Type.STRING)
+            return Type.STRING;*/
+
+        if((expr instanceof AddOp) ){
+            if(leftType == Type.STRING || rightType == Type.STRING)
+                return Type.STRING;
+        }
 
         return null;
     }
@@ -75,6 +81,7 @@ public class CompType {
         if(leftType == Type.REAL && rightType == Type.INTEGER) return Type.BOOLEAN;
         if(leftType == Type.INTEGER && rightType == Type.REAL) return Type.BOOLEAN;
         if(leftType == Type.REAL && rightType == Type.REAL) return Type.BOOLEAN;
+        if(leftType == Type.STRING && rightType == Type.STRING) return Type.BOOLEAN;
         return null;
     }
 

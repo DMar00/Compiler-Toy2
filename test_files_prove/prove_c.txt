@@ -1,16 +1,16 @@
 proc main():
-    var i : integer; f : real; b : boolean;\
-    i ^= f;
-    f ^= f;
-    b ^= i;
+    var s : string;\
+    prova("ciao "+"bau", 3);
+    %s ^= prova2("ciao "+"bau"+" moooooo", 3);%
+
+    -->"ciao" + " ciaooooooooo" + " bau";
+
 endproc
 
-func prova(x: integer)->string, integer:
-    var y : string; i: integer;\
-    y, i ^= y, i;
-    return y,i;
-endfunc
+proc prova(s:string, x: integer):
 
-func prova2()->string:
-    return "cocco bello";
+endproc
+
+func prova2(s:string, x: integer)-> string:
+    return "a";
 endfunc
