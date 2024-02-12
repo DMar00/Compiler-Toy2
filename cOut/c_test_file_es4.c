@@ -5,8 +5,28 @@
 void sommac(int a, int d, float b, char *size_out, float *result_out);
 char * stampa (char *messaggio);
 
+char *buffer;
+
 	int  c = 1;
 
+char* intToString(int num) {
+	buffer = (char*)malloc(30 * sizeof(char));
+	snprintf(buffer, sizeof(buffer), "%d", num);
+	return buffer;
+}
+
+char* myStrcat(char *s1, const char *s2){
+	char *s = strdup("");
+	strcat(s, s1);
+	strcat(s, s2);
+	return s;
+}
+
+char* floatToString(float num) {
+	buffer = (char*)malloc(30 * sizeof(char));
+	snprintf(buffer, sizeof(buffer), "%f", num);
+	return buffer;
+}
 void sommac(int a, int d, float b, char *size_out, float *result_out){
 *result_out = a+b+c+d;
 if (*result_out>100) {
@@ -39,45 +59,19 @@ float  t0 = risultato;
 	sommac(a, x, b, taglia, &t0);
 risultato = t0;
 free(valore);
-valore = strdup(stampa(c = strdup(c = strdup(c = strdup("la somma di "+a);
-c = strcat(c, " e ");
-+b);
-c = strcat(c, " incrementata di ");
-+c);
-c = strcat(c, " è ");aglia));
+valore = strdup(stampa(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat("la somma di ", intToString(a)), " e "), floatToString(b)), " incrementata di "), intToString(c)), " è "), taglia)));
 free(valore);
-valore = strdup(stampa("ed è pari a "+risultato));
-printf("vuoi continuare? (si/no) - inserisci due volte la risposta");
-scanf("%s", ans);
-scanf("%s", ans1);
-while (ans="si") {
-printf("inserisci un intero:");
-scanf("%d", &a);
-printf("inserisci un reale:");
-scanf("%f", &b);
-float  t0 = risultato;
-	sommac(a, x, b, taglia, &t0);
-risultato = t0;
-free(valore);
-valore = strdup(stampa(c = strdup(c = strdup(c = strdup("la somma di "+a);
-c = strcat(c, " e ");
-+b);
-c = strcat(c, " incrementata di ");
-+c);
-c = strcat(c, " è ");aglia));
-free(valore);
-valore = strdup(stampa(" ed è pari a "+risultato));
-printf("vuoi continuare? (si/no):\t");
-scanf("%s", ans);
-
-}printf("\n");
+valore = strdup(stampa(myStrcat("ed è pari a ", intToString(risultato))));
+printf("\n");
 printf("ciao");
+free(buffer);
 
 }
 char * stampa (char *messaggio){
 	int  i = 0;
 while (i<4) {
 printf("\n");
+i = i+1;
 
 }printf("%s", messaggio);
 	return "ok";

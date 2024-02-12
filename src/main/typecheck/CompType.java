@@ -82,6 +82,7 @@ public class CompType {
         if(leftType == Type.INTEGER && rightType == Type.REAL) return Type.BOOLEAN;
         if(leftType == Type.REAL && rightType == Type.REAL) return Type.BOOLEAN;
         if(leftType == Type.STRING && rightType == Type.STRING) return Type.BOOLEAN;
+        if(leftType == Type.BOOLEAN && rightType == Type.BOOLEAN) return Type.BOOLEAN;
         return null;
     }
 

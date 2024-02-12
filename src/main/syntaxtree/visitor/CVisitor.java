@@ -90,8 +90,41 @@ public class CVisitor implements Visitor{
         return id.charAt(0) == '*';
     }
 
+    //funzione c per strasformare interi in stringhe
+    private String createIntToStringFunction(){
+        StringBuffer sb = new StringBuffer();
+        sb.append("char* intToString(int num) {\n");
+        //sb.append("\tfree(buffer);\n");
+        sb.append("\tbuffer = (char*)malloc(30 * sizeof(char));\n");
+        sb.append("\tsnprintf(buffer, 30, \"%d\", num);\n");
+        sb.append("\treturn buffer;\n");
+        sb.append("}\n");
+        return sb.toString();
+    }
 
+    private String createFloatToStringFunction(){
+        StringBuffer sb = new StringBuffer();
+        sb.append("char* floatToString(float num) {\n");
+        //sb.append("\tfree(buffer);\n");
+        sb.append("\tbuffer = (char*)malloc(30 * sizeof(char));\n");
+        sb.append("\tsnprintf(buffer, 30, \"%f\", num);\n");
+        sb.append("\treturn buffer;\n");
+        sb.append("}\n");
+        return sb.toString();
+    }
 
+    //funzione strcat modificata per accodare stringhe
+    private String createMyStrcatFunction(){
+        StringBuffer sb = new StringBuffer();
+        sb.append("char* myStrcat(char *s1, const char *s2){\n");
+        //sb.append("\tfree(s);\n");
+        sb.append("\tchar *s = (char*)calloc(strlen(s1)+strlen(s2)+1,sizeof(char));\n");
+        sb.append("\tstrcat(s, s1);\n");
+        sb.append("\tstrcat(s, s2);\n");
+        sb.append("\treturn s;\n");
+        sb.append("}\n");
+        return sb.toString();
+    }
 
 
 
@@ -148,6 +181,8 @@ public class CVisitor implements Visitor{
 
 
 
+
+
     /********************************************************************************/
 
     @Override
@@ -173,8 +208,20 @@ public class CVisitor implements Visitor{
         resultProgram.append("\n");
 
         //3. variabili globali
+        resultProgram.append("char *buffer;\n\n");
+        //resultProgram.append("char *s;\n\n");
         resultProgram.append(globalVariables);
         resultProgram.append("\n");
+
+        //4.funzioni di utilità
+        String func1 = createIntToStringFunction();
+        String func2 = createMyStrcatFunction();
+        String func3 = createFloatToStringFunction();
+        resultProgram.append(func1);
+        resultProgram.append("\n");
+        resultProgram.append(func2);
+        resultProgram.append("\n");
+        resultProgram.append(func3);
 
         //4. programma
         resultProgram.append(sb);
@@ -209,17 +256,21 @@ public class CVisitor implements Visitor{
     public Object visit(VarDeclOp varDeclOp) {
         StringBuffer sb = new StringBuffer();
 
-        Type type = varDeclOp.type; //tipo variabili    se ad esempio var s : integer;\
-        String transType = transformVariables(type, "");
+        //Type type = varDeclOp.type; //tipo variabili    se ad esempio var s : integer;\
+        //String transType = transformVariables(type, "");
 
         for(Map.Entry<Id, ConstNode> entry : varDeclOp.ids.entrySet()) {
             Id id = entry.getKey();
             ConstNode cn = entry.getValue();
+            Type type = id.getNodeType(); //tipo variabili    se ad esempio var s : integer;\
+            String transType = transformVariables(type, "");
+
             String s1 = "\t" + transType + " " + id.idName + " ";   //tipo nomeVariabile
             sb.append(s1);
 
             if(cn != null) {
                 String value = (String) cn.accept(this);
+
                 String s2;
                 if(cn instanceof StringConstNode)
                     s2 = "= strdup("+value+")"; //char * n = strdup("hello")
@@ -267,6 +318,9 @@ public class CVisitor implements Visitor{
             String var = (String) s.accept(this);
             sb.append(var);
         }
+
+        if(bodyOp.getFunProcName().equals("main"))
+            sb.append("free(buffer);\n");
 
         return sb.toString();
     }
@@ -495,8 +549,9 @@ public class CVisitor implements Visitor{
             procParams.get(i).expr.setFunProcName(procCallOp.getFunProcName());
 
             //proc("ciao"+" bau", 3) --> proc("ciao bau", 3);
+            //TODO inPrint
             if((procParams.get(i).expr instanceof AddOp))
-                ((AddOp)procParams.get(i).expr).setInPrintOrRead(true);
+                ((AddOp)procParams.get(i).expr).setInPrintOrReadOrCall(false);
 
             String p = (String) procParams.get(i).accept(this);
 
@@ -654,9 +709,10 @@ public class CVisitor implements Visitor{
         //accodo separati da virgola i parametri nella chiamata di funzione
         if(funCallOp.exprList != null) {
             for(int i = 0; i<funCallOp.exprList.size(); i++) {
+                //TODO inPrint
                 //func("ciao"+" bau", 3) --> func("ciao bau", 3);
                 if((funCallOp.exprList.get(i) instanceof AddOp))
-                    ((AddOp)funCallOp.exprList.get(i)).setInPrintOrRead(true);
+                    ((AddOp)funCallOp.exprList.get(i)).setInPrintOrReadOrCall(false);
 
                 String expr = (String) funCallOp.exprList.get(i).accept(this);
                 sbPar.append(expr);
@@ -750,6 +806,7 @@ public class CVisitor implements Visitor{
                     pointerCount++;
                 }
 
+                //TODO Stringhe ???
                 //chiamata a funzione --> func(param1, ..., *p ...); ...
                 //scorro i parametri [no puntatori] e li accodo separati da virgola
                 StringBuffer sbParams = new StringBuffer();
@@ -804,9 +861,8 @@ public class CVisitor implements Visitor{
                 //2. viene eseguita la strdup per allocare memoria
                 if(exprType == Type.STRING){
                     if(e instanceof AddOp){
-                        String s = expr+
-                                idFunc + " = strdup(c);\n"+
-                                "free(c);";
+                        //TODO HERE funzione che rest un solo valore ?
+                        String s = "strcat("+idFunc+", "+expr+");\n";
                         sb.append(s);
                     }
                     else{
@@ -896,42 +952,66 @@ public class CVisitor implements Visitor{
         return sb.toString();
     }
 
-    StringBuffer sbStringAppend = new StringBuffer();
-    @Override
+
     public Object visit(AddOp addOp) {
+        if(addOp.isInPrintOrReadOrCall()){
+            addOp.leftNode.setInPrintOrReadOrCall(true);
+            addOp.rightNode.setInPrintOrReadOrCall(true);
+        }
+
         addOp.leftNode.setFunProcName(addOp.getFunProcName());
         String eLeft = (String) addOp.leftNode.accept(this);
+
         addOp.rightNode.setFunProcName(addOp.getFunProcName());
         String eRight = (String) addOp.rightNode.accept(this);
-        System.out.println(eLeft + " - "+eRight);
 
-        if(addOp.leftNode.getNodeType() == Type.STRING && addOp.rightNode.getNodeType() == Type.STRING) {
-            if(addOp.isInPrintOrRead()) {
-                //return eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
-                /*StringConstNode leftStringNode = new StringConstNode(eLeft.substring(0, eLeft.length() - 1));
-                StringConstNode rightStringNode = new StringConstNode(eRight.substring(1, eRight.length()));
-                AddOp newAddOp = new AddOp(leftStringNode, rightStringNode);
-                String s = leftStringNode.value + rightStringNode.value;
-                if(rightStringNode != null)
-                    return newAddOp.accept(this);
-                else
-                    return s;*/
-                if(sbStringAppend.isEmpty()){
-                    String s = eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
-                    sbStringAppend.append(s);
-                }else{
-                    //tolgo ultima "
-                    sbStringAppend.delete(0, sbStringAppend.length()-1);
-                    sbStringAppend.append(eRight.substring(1, eRight.length()));
-                }
-                return sbStringAppend.toString();
+        if(addOp.leftNode.getNodeType() == Type.STRING || addOp.rightNode.getNodeType() == Type.STRING){
+            //SE CI SONO OPERANDI DI TIPO STRINGA
+            String left = null, right = null;
+            if(addOp.leftNode instanceof StringConstNode){
+                //left = eLeft.substring(1, eLeft.length()-1);    //tolgo virgolette
+                left = eLeft;
             }
-            else {
-                return strcat(eLeft, eRight);
+            if(addOp.leftNode.getNodeType() == Type.INTEGER){ //trasformo 5 in "5"
+                left = "intToString("+eLeft+")";
             }
-        } else {
+            if(addOp.leftNode.getNodeType() == Type.REAL){
+                left = "floatToString("+eLeft+")";
+            }
+
+            //TODO boolean(in integer forse)
+
+            if(addOp.rightNode instanceof StringConstNode){
+                //right = eRight.substring(1, eRight.length()-1);
+                right = eRight;
+            }
+            if(addOp.rightNode.getNodeType() == Type.INTEGER){
+                right = "intToString("+eRight+")";
+            }
+            if(addOp.rightNode.getNodeType() == Type.REAL){
+                right = "floatToString("+eRight+")";
+            }
+
+            if(left == null)
+                left = eLeft;
+            if(right == null)
+                right = eRight;
+
+            if(!addOp.isInPrintOrReadOrCall()){
+                //FACCIO STRCAT
+                String s = "myStrcat("+left+", "+right+")";
+                return s;
+            }else{
+                //CONCATENO E BASTA NELLE WRITE E READ
+                String s = eLeft.substring(0, eLeft.length()-1) + eRight.substring(1, eRight.length());
+                return s;
+            }
+
+        }else{
+            //SE NON CI SONO OPERANDI DI TIPO STRINGA
             return writeBinaryExpr(addOp, "+");
         }
+
     }
 
     @Override
@@ -981,7 +1061,17 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(EqOp eqOp) {
-        return writeBinaryExpr(eqOp, "=");
+        eqOp.leftNode.setFunProcName(eqOp.getFunProcName());
+        String eLeft = (String) eqOp.leftNode.accept(this);
+
+        eqOp.rightNode.setFunProcName(eqOp.getFunProcName());
+        String eRight = (String) eqOp.rightNode.accept(this);
+
+        if(eqOp.leftNode.getNodeType() == Type.STRING && eqOp.rightNode.getNodeType() == Type.STRING){
+            //strcmp(str1, str2) == 0
+            return "strcmp("+eLeft+", "+eRight+") == 0";
+        }
+        return writeBinaryExpr(eqOp, "==");
     }
 
     @Override
@@ -1006,12 +1096,17 @@ public class CVisitor implements Visitor{
 
                     String dollarId = (String) e.expression().accept(this);
                     dollarIdList.add(dollarId); //aggiungo le variabili che vanno messe dopo la virgola nella printf
-                    String type = String.valueOf(e.expression().getNodeType());
+
+                    //String type = String.valueOf(e.expression().getNodeType());
+                    String type = e.expression().getNodeType().toString();
                     String ft = getFormatSpecifier(type);
+                    System.out.println("type: "+type+" - dollarId: "+dollarId+" - scope:");
                     sbExpr.append(ft);  //aggiungo segnaposto per la printf
+
+
                 } else { //se l'expr è fuori dal $()
                     if(e.expression() instanceof AddOp)
-                        ((AddOp)e.expression()).setInPrintOrRead(true);
+                        ((AddOp)e.expression()).setInPrintOrReadOrCall(true);
 
                     String s = (String) e.expression().accept(this);
                     sbExpr.append(s.substring(1,s.length()-1)); //prendo la stringa senza virgolette esterne
@@ -1052,7 +1147,7 @@ public class CVisitor implements Visitor{
 
         for(IOArgsOp.IoExpr e : ioArgsOp.exprList) {
             if((e.expression() instanceof AddOp) && (!e.dollarMode()))
-                ((AddOp)e.expression()).setInPrintOrRead(true);
+                ((AddOp)e.expression()).setInPrintOrReadOrCall(true);
 
             String expr = (String) e.expression().accept(this);
             if(e.dollarMode()) {

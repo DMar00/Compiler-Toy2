@@ -53,6 +53,7 @@ proc main():
 	valore ^= stampa("la somma di " + a + " e " + b +  " incrementata di "  + c +  " è " + taglia);
 	valore ^= stampa("ed è pari a " + risultato);
 
+    %
 	<-- "vuoi continuare? (si/no) - inserisci due volte la risposta" $(ans) $(ans1) ;
 
 	while ans = "si" do
@@ -63,7 +64,7 @@ proc main():
 	    valore ^= stampa("la somma di " + a + " e " + b +  " incrementata di " + c + " è " + taglia);
 	    valore ^= stampa(" ed è pari a " + risultato);
 	    <-- "vuoi continuare? (si/no):\t" $(ans);
-    endwhile;
+    endwhile;%
 
     -->! ;
     --> "ciao";
@@ -74,8 +75,10 @@ endproc
 % stampa il messaggio dopo 4 ritorni a capo %
 func stampa(messaggio: string)-> string:
     var i ^= 0;\
+
     while i < 4 do
 	-->! ;
+	i ^= i + 1;
     endwhile;
 
      --> $(messaggio);
