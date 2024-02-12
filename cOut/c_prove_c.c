@@ -2,16 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-float  somma (float n1, float n2);
-float  moltiplicazione (float n1, float n2);
-float  divisione (float n1, float n2);
-float  sottrazione (float n1, float n2);
+void sommac(int a, int d, float b, char *size_out, float *result_out);
+char * stampa (char *messaggio);
 
-char *buffer;
-
+	int  c = 1;
 
 char* intToString(int num) {
-	buffer = (char*)malloc(30 * sizeof(char));
+	char *buffer = (char*)malloc(30 * sizeof(char));
 	snprintf(buffer, 30, "%d", num);
 	return buffer;
 }
@@ -24,92 +21,71 @@ char* myStrcat(char *s1, const char *s2){
 }
 
 char* floatToString(float num) {
-	buffer = (char*)malloc(30 * sizeof(char));
+	char *buffer = (char*)malloc(30 * sizeof(char));
 	snprintf(buffer, 30, "%f", num);
 	return buffer;
 }
-int main(){
-	int  scelta = 2;
-	float  n2 ;
-	float  n1 ;
-	int  condizione1 = 1;
-	int  condizione2 = 1;
-while (condizione1&&condizione2) {
-printf("Inserisci 2 per eseguire la somma");
-printf("\n");
-printf("Inserisci 3 per eseguire la moltiplicazione");
-printf("\n");
-printf("Inserisci 4 per eseguire la divisione");
-printf("\n");
-printf("Inserisci 5 per eseguire la sottrazione");
-printf("\n");
-printf("Inserisci 1 o 0 per chiudere il programma");
-printf("Inserisci un numero : \t");
-scanf("%d", &scelta);
-if (scelta==2) {
-printf("Inserisci primo operando : \t");
-scanf("%f", &n1);
-printf("Inserisci secondo operando : \t");
-scanf("%f", &n2);
-printf("\n");
-printf("Il risultato � : \t%f", somma(n1, n2));
-free(buffer);
+void sommac(int a, int d, float b, char *size_out, float *result_out){
+*result_out = a+b+c+d;
+if (*result_out>100) {
+	char * valore = (char *)malloc(256 * sizeof(char));
+strcpy(valore, "grande");
+strcpy(size_out, valore);
 
-} else if (scelta==3) {
-printf("Inserisci primo operando : \t");
-scanf("%f", &n1);
-printf("Inserisci secondo operando : \t");
-scanf("%f", &n2);
-printf("\n");
-printf("Il risultato � : \t%f", moltiplicazione(n1, n2));
-free(buffer);
-
-} else if (scelta==4) {
-printf("Inserisci primo operando : \t");
-scanf("%f", &n1);
-printf("Inserisci secondo operando : \t");
-scanf("%f", &n2);
-printf("\n");
-printf("Il risultato � : \t%f", divisione(n1, n2));
-free(buffer);
-
-} else if (scelta==5) {
-printf("Inserisci primo operando : \t");
-scanf("%f", &n1);
-printf("Inserisci secondo operando : \t");
-scanf("%f", &n2);
-printf("\n");
-printf("Il risultato � : \t%f", sottrazione(n1, n2));
-free(buffer);
+} else if (*result_out>50) {
+	char * valore = (char *)malloc(256 * sizeof(char));
+strcpy(valore, "media");
+strcpy(size_out, valore);
 
 } else{
-condizione1 = 0;
-free(buffer);
+	char * valore = (char *)malloc(256 * sizeof(char));
+strcpy(valore, "piccola");
+strcpy(size_out, valore);
+
+}
+}
+int main(){
+	int  a = 1;
+	float  b = 2.2;
+	int  x = 3;
+	char * ans1  = (char *)malloc(256 * sizeof(char));
+	char * taglia  = (char *)malloc(256 * sizeof(char));
+	char * ans = (char *)malloc(256 * sizeof(char));
+strcpy(ans, "no");
+	int  risultato = 0;
+	char * valore = (char *)malloc(256 * sizeof(char));
+strcpy(valore, "nok");
+float  t0 = risultato;
+	sommac(a, x, b, taglia, &t0);
+risultato = t0;
+strcpy(valore, stampa(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat("la somma di ", intToString(a)), " e "), floatToString(b)), " incrementata di "), intToString(c)), " e' "), taglia)));
+strcpy(valore, stampa(myStrcat("ed e' pari a ", intToString(risultato))));
+printf("vuoi continuare? (si/no) - inserisci due volte la risposta\n");
+scanf("%s", ans);
+scanf("%s", ans1);
+while (strcmp(ans, "si") == 0) {
+printf("inserisci un intero:");
+scanf("%d", &a);
+printf("inserisci un reale:");
+scanf("%f", &b);
+float  t0 = risultato;
+	sommac(a, x, b, taglia, &t0);
+risultato = t0;
+strcpy(valore, stampa(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat("la somma di ", intToString(a)), " e "), floatToString(b)), " incrementata di "), intToString(c)), " e' "), taglia)));
+strcpy(valore, stampa(myStrcat(" ed e' pari a ", intToString(risultato))));
+printf("vuoi continuare? (si/no):\t");
+scanf("%s", ans);
 
 }printf("\n");
+printf("ciao");
+
+}
+char * stampa (char *messaggio){
+	int  i = 0;
+while (i<4) {
 printf("\n");
-free(buffer);
+i = i+1;
 
-}free(buffer);
-
-}
-float  somma (float n1, float n2){
-	float  risultato ;
-risultato = n1+n2;
-	return risultato;
-}
-float  moltiplicazione (float n1, float n2){
-	float  risultato ;
-risultato = n1*n2;
-	return risultato;
-}
-float  divisione (float n1, float n2){
-	float  risultato ;
-risultato = n1/n2;
-	return risultato;
-}
-float  sottrazione (float n1, float n2){
-	float  risultato ;
-risultato = n1-n2;
-	return risultato;
+}printf("%s", messaggio);
+	return "ok";
 }

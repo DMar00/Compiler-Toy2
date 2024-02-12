@@ -54,12 +54,12 @@ public class SymbolTable {
 
     public SymbolItem lookup(String idName) {
         SymbolNode currentLooking = activeTable;
-        System.out.println("Scope corrente: "+ currentLooking.getNameScope());
+        //System.out.println("Scope corrente: "+ currentLooking.getNameScope());
 
         while(currentLooking != null) {
             //se trova il SymbolItem nella tabella corrente lo restituisce
             if(currentLooking.containsKey(idName)){
-                System.out.println("Trovato "+idName+" in: "+ currentLooking.getNameScope());
+                //System.out.println("Trovato "+idName+" in: "+ currentLooking.getNameScope());
                 //System.out.println("lookup() - id:"+idName+" - scope: "+currentLooking.getNameScope() + " - type:"+currentLooking.get(idName).getVarType());
                 return currentLooking.get(idName);
             }

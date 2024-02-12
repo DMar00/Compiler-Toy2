@@ -576,6 +576,10 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         ifOp.ifBody.accept(this);
         ifOp.setNodeTypes(ifOp.ifBody.getNodeTypes());
 
+
+        //todo esco scope if
+        activeSymbolTable.exitScope();
+
         //visito elifs
         List<ElifOp> elifs = ifOp.elifs;
         if(elifs != null && elifs.size()>0){
@@ -625,7 +629,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
 
         //esco scope if
-        activeSymbolTable.exitScope();
+        //activeSymbolTable.exitScope();
 
         return null;
     }
@@ -646,11 +650,11 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
     @Override
     public Object visit(WhileOp whileOp) {
         //entro scope while
-        System.out.println("prima While: " + activeSymbolTable.getActiveTable().getNameScope());
+        //System.out.println("prima While: " + activeSymbolTable.getActiveTable().getNameScope());
 
         activeSymbolTable.enterSpecificScope(setProgressiveName("while"));
 
-        System.out.println("dopo While: " + activeSymbolTable.getActiveTable().getNameScope());
+        //System.out.println("dopo While: " + activeSymbolTable.getActiveTable().getNameScope());
 
         //mi assicuro che espressione se è una chiamata a funzione non restitusca più valori
         if(whileOp.whileExpr instanceof FunCallOp){
@@ -666,7 +670,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
 
         //visito body
         whileOp.doBody.setFunProcName(whileOp.getFunProcName());
-        System.out.println("while --> " + activeSymbolTable.getActiveTable().getNameScope());
+        //System.out.println("while --> " + activeSymbolTable.getActiveTable().getNameScope());
         whileOp.doBody.accept(this);
 
         //esco scope while
@@ -716,7 +720,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                     }
                     e.expression().accept(this);
                     if(e.dollarMode()){
-                        System.out.println("SV expr: " + e.expression().getNodeType() + "- scope: "+ activeSymbolTable.getActiveTable().getNameScope()+ "- e type : "+e.expression().getClass().getName());
+                        //System.out.println("SV expr: " + e.expression().getNodeType() + "- scope: "+ activeSymbolTable.getActiveTable().getNameScope()+ "- e type : "+e.expression().getClass().getName());
                     }else{
                         if(!(e.expression() instanceof StringConstNode) && !(e.expression().getNodeType() == Type.STRING)) {
                             throw new RuntimeException("fuori dal $() non può essere un id, gli id vanno dentro $()");

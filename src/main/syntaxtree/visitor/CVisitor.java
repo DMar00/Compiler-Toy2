@@ -29,6 +29,11 @@ public class CVisitor implements Visitor{
     private HashMap<String, List<Type>> funcMap;
     //mappa che tiene traccia per ogni procedura dei tipi dei parametri
     private HashMap<String, List<Type>> procMap;
+    //mappa che tiene traccia per ogni funzione ...
+    private HashMap<String, List<String>> idMap;
+    /**/
+    private int pointerCount;
+
 
     //Costruttore
     public CVisitor(HashMap<String, List<Type>> funcMap, HashMap<String, List<Type>> procMap) {
@@ -95,7 +100,7 @@ public class CVisitor implements Visitor{
         StringBuffer sb = new StringBuffer();
         sb.append("char* intToString(int num) {\n");
         //sb.append("\tfree(buffer);\n");
-        sb.append("\tbuffer = (char*)malloc(30 * sizeof(char));\n");
+        sb.append("\tchar *buffer = (char*)malloc(30 * sizeof(char));\n");
         sb.append("\tsnprintf(buffer, 30, \"%d\", num);\n");
         sb.append("\treturn buffer;\n");
         sb.append("}\n");
@@ -106,7 +111,7 @@ public class CVisitor implements Visitor{
         StringBuffer sb = new StringBuffer();
         sb.append("char* floatToString(float num) {\n");
         //sb.append("\tfree(buffer);\n");
-        sb.append("\tbuffer = (char*)malloc(30 * sizeof(char));\n");
+        sb.append("\tchar *buffer = (char*)malloc(30 * sizeof(char));\n");
         sb.append("\tsnprintf(buffer, 30, \"%f\", num);\n");
         sb.append("\treturn buffer;\n");
         sb.append("}\n");
@@ -125,62 +130,6 @@ public class CVisitor implements Visitor{
         sb.append("}\n");
         return sb.toString();
     }
-
-
-
-
-
-    //mappa che tiene traccia per ogni funzione ...
-    private HashMap<String, List<String>> idMap;
-    /**/
-    private int pointerCount;
-    /**/
-    private boolean isConcatPointer = false;
-    /**/
-    //private List<String> stringVars = new ArrayList<>();
-
-    private String strcat (String toAdd1, String toAdd2){
-        StringBuffer sb = new StringBuffer();
-
-        //nella strdup non ci vuole * se la variabile è un puntatore
-        String op1, op2;
-        if(toAdd1.charAt(0) == '*')
-            op1 = toAdd1.substring(1);
-        else
-            op1 = toAdd1;
-        if(toAdd2.charAt(0) == '*')
-            op2 = toAdd2.substring(1);
-        else
-            op2 = toAdd2;
-
-        //controllo se è già stata dichiarata la variabile char *c che uso come temporanea per la concatenazione
-        if(!isConcatPointer) {
-            sb.append("char *c = strdup(" + op1 + ");\n");
-            isConcatPointer = true;
-        } else{
-            sb.append("c = strdup(" + op1 + ");\n");
-        }
-
-        sb.append("c = strcat(c, "+ op2+");\n");
-        return sb.toString();
-    }
-
-    private String assignStrCat(String base,  String expr){
-        StringBuffer sb = new StringBuffer();
-        sb.append("free("+ base+");\n");
-        sb.append(expr);
-        sb.append(base + " = strdup(c);\n");
-        sb.append("free(c);\n");
-        return sb.toString();
-    }
-
-
-
-
-
-
-
-
 
 
     /********************************************************************************/
@@ -208,8 +157,6 @@ public class CVisitor implements Visitor{
         resultProgram.append("\n");
 
         //3. variabili globali
-        resultProgram.append("char *buffer;\n\n");
-        //resultProgram.append("char *s;\n\n");
         resultProgram.append(globalVariables);
         resultProgram.append("\n");
 
@@ -273,7 +220,9 @@ public class CVisitor implements Visitor{
 
                 String s2;
                 if(cn instanceof StringConstNode)
-                    s2 = "= strdup("+value+")"; //char * n = strdup("hello")
+                    //s2 = "= strdup("+value+")"; //char * n = strdup("hello")
+                    s2 = "= (char *)malloc(256 * sizeof(char));\n"
+                            + "strcpy("+id.idName+", "+value+")";
                 else
                     s2 = "= " + value;          //int n = 5
 
@@ -281,7 +230,8 @@ public class CVisitor implements Visitor{
 
             }else{
                 if(type == Type.STRING){
-                    sb.append(" = strdup(\"\")");      //char *n = strdup("");
+                    //sb.append(" = strdup(\"\")");      //char *n = strdup("");
+                    sb.append(" = (char *)malloc(256 * sizeof(char))");
                     //facciamo così e non semplicemente char *n;  altrimenti non viene modificata
                     // se passata ad una funzione per riferimento
                 }
@@ -318,9 +268,6 @@ public class CVisitor implements Visitor{
             String var = (String) s.accept(this);
             sb.append(var);
         }
-
-        if(bodyOp.getFunProcName().equals("main"))
-            sb.append("free(buffer);\n");
 
         return sb.toString();
     }
@@ -793,8 +740,10 @@ public class CVisitor implements Visitor{
 
                     String assign;
                     if(t == Type.STRING){
-                        assign = "free("+updatedId+");\n"
-                                +updatedId+" = strdup(p"+pointerCount+");\n";
+                        //todo modifica assign
+                        /*assign = "free("+updatedId+");\n"
+                                +updatedId+" = strdup(p"+pointerCount+");\n";*/
+                        assign = "strcpy("+updatedId+", p"+pointerCount+");\n";
                     }else{
                         assign = "\t"+updatedId + " =  p" + pointerCount+";\n";
                     }
@@ -886,8 +835,7 @@ public class CVisitor implements Visitor{
 
     private String assignString(String id, String val){
         //char *s...., char *s1....
-        //free(s)
-        //s = strdup(s1)
+        //strcpy(s, s1);
 
         StringBuffer sb = new StringBuffer();
 
@@ -905,15 +853,16 @@ public class CVisitor implements Visitor{
         else
             val2 = val;
 
-        sb.append("free("+var+");\n");
-        sb.append(var+" = strdup("+val2+");\n");
+        //sb.append("free("+var+");\n");
+        //sb.append(var+" = strdup("+val2+");\n");
+        sb.append("strcpy("+var+", "+val2+");\n");
         return sb.toString();
     }
 
     private String declareVariable(Type t , String id){
         String s;
         if(t == Type.STRING){
-            s = transformVariables(t, "") + " " + id + " = strdup(\"\");\n";
+            s = transformVariables(t, "") + " " + id + " = (char *)malloc(256 * sizeof(char));\n";
         }else{
             s = transformVariables(t, "") + " " + id +";\n";
         }
@@ -1076,6 +1025,16 @@ public class CVisitor implements Visitor{
 
     @Override
     public Object visit(NeOp neOp) {
+        neOp.leftNode.setFunProcName(neOp.getFunProcName());
+        String eLeft = (String) neOp.leftNode.accept(this);
+
+        neOp.rightNode.setFunProcName(neOp.getFunProcName());
+        String eRight = (String) neOp.rightNode.accept(this);
+
+        if(neOp.leftNode.getNodeType() == Type.STRING && neOp.rightNode.getNodeType() == Type.STRING){
+            //strcmp(str1, str2) != 0
+            return "strcmp("+eLeft+", "+eRight+") != 0";
+        }
         return writeBinaryExpr(neOp, "!=");
     }
 
