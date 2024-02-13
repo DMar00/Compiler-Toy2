@@ -174,7 +174,7 @@ public class CVisitor implements Visitor{
         resultProgram.append(sb);
 
         //TODO delete print
-        System.out.println(resultProgram);
+        //System.out.println(resultProgram);
         return null;
     }
 
@@ -1059,7 +1059,7 @@ public class CVisitor implements Visitor{
                     //String type = String.valueOf(e.expression().getNodeType());
                     String type = e.expression().getNodeType().toString();
                     String ft = getFormatSpecifier(type);
-                    System.out.println("type: "+type+" - dollarId: "+dollarId+" - scope:");
+                    //System.out.println("type: "+type+" - dollarId: "+dollarId+" - scope:");
                     sbExpr.append(ft);  //aggiungo segnaposto per la printf
 
 

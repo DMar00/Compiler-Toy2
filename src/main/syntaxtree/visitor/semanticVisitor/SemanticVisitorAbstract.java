@@ -36,7 +36,7 @@ public abstract class SemanticVisitorAbstract {
     }
 
     protected SymbolItem findInParentsScopes(String idToFind){
-        System.out.println("Id to find : "+ idToFind + " in scope : " + activeSymbolTable.getActiveTable().getNameScope());
+        //System.out.println("Id to find : "+ idToFind + " in scope : " + activeSymbolTable.getActiveTable().getNameScope());
 
         //SymbolItem itemFound = activeSymbolTable.lookupOnlyActive(idToFind);
         SymbolItem itemFound = activeSymbolTable.lookupOnlyActive(idToFind);

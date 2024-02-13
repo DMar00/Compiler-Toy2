@@ -38,24 +38,20 @@ public class Toy2ToC {
             astRoot.accept(scopingVisitor2);
 
             //Visitor C
-            /*for(Map.Entry<String, List<Type>> entry : scopingVisitor.getProcMap().entrySet()){
-                System.out.println("-->" + entry.getKey());
-                for(Type t : entry.getValue())
-                    System.out.println("\t-->"+t.toString());
-            }*/
             CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap(), scopingVisitor.getProcMap());
             astRoot.accept(cVisitor);
 
             Path percorso = Paths.get(args[0]);
             String fileName = percorso.getFileName().toString();
-            String cFileName = "c_" + fileName.substring(0,fileName.length()-4) ;
+            String cFileName = fileName.substring(0,fileName.length()-4) ;
             String cFileNamePlusExtension = cFileName+".c";
-            cVisitor.printToFile("cOut/"+cFileNamePlusExtension);
+            //System.out.println("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
+            cVisitor.printToFile("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
 
 
             //ESECUZIONE DI GCC PER CREARE IL FILE OUTPUT.EXE A PARTIRE DAL FILE.C
-            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", "output.exe", cFileNamePlusExtension);
-            builder.directory(new File("cOut"));
+            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+".exe", cFileNamePlusExtension);
+            builder.directory(new File("test_files"+File.separator+"c_out"));
             builder.redirectErrorStream(true);
             Process p = builder.start();
 
@@ -68,7 +64,7 @@ public class Toy2ToC {
             }
 
             //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
-            ProcessBuilder processBuilder = new ProcessBuilder("cOut/"+"output.exe");
+            ProcessBuilder processBuilder = new ProcessBuilder("c_out/"+"output.exe");
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;

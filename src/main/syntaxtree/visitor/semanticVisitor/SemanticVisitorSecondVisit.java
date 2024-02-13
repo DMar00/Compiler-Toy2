@@ -147,7 +147,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
         }
 
         //TODO delete print
-        System.out.println("Visita 2°\n"+activeSymbolTable);
+        //System.out.println("Visita 2°\n"+activeSymbolTable);
         return null;
     }
 

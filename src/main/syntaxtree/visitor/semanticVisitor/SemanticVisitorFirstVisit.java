@@ -75,7 +75,7 @@ public class SemanticVisitorFirstVisit extends SemanticVisitorAbstract implement
         }
 
         //TODO delete print
-        System.out.println("Visita 1°\n"+activeSymbolTable);
+        //System.out.println("Visita 1°\n"+activeSymbolTable);
 
         return null;
     }
