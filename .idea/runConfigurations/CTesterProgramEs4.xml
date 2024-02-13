@@ -2,7 +2,7 @@
   <configuration default="false" name="CTesterProgramEs4" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="main.testers.Toy2ToC" />
     <module name="D-Alfonso-Orrigo_es5" />
-    <option name="PROGRAM_PARAMETERS" value="test_files/tests/valid2/valid2.txt" />
+    <option name="PROGRAM_PARAMETERS" value="tests/invalid_bad_funcall/invalid_bad_funcall.txt" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
