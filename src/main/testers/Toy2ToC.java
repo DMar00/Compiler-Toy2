@@ -73,7 +73,7 @@ public class Toy2ToC {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("aaaaaaaaaaaaaaa"+e);
         }
     }
 }
