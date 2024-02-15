@@ -16,7 +16,14 @@ import java.util.Scanner;
 
 public class Toy2ToC {
     public static void main(String[] args) throws FileNotFoundException {
+        PrintStream originalErr = System.err;
+        ByteArrayOutputStream errorStream = null;
+
         try {
+            errorStream = new ByteArrayOutputStream();
+            PrintStream customErr = new PrintStream(errorStream);
+            System.setErr(customErr);
+
             Reader inFile = new FileReader(args[0]);
 
             Lexer lexer = new Lexer(inFile);
@@ -73,7 +80,13 @@ public class Toy2ToC {
             }
 
         } catch (Exception e) {
-            System.out.println("aaaaaaaaaaaaaaa"+e);
+            //System.out.println("aaaaaaaaaaaaaaa"+e);
+            e.printStackTrace();
+            String errorMessage = new String(errorStream.toByteArray());
+            System.out.println("Errore catturato da System.err: " + errorMessage);
+        } finally {
+            // Ripristina System.err al suo valore originale
+            System.setErr(originalErr);
         }
     }
 }
