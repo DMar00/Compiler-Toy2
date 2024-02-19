@@ -46,12 +46,12 @@ public class Toy2ToC {
             String cFileName = fileName.substring(0,fileName.length()-4) ;
             String cFileNamePlusExtension = cFileName+".c";
             //System.out.println("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
-            cVisitor.printToFile("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
+            cVisitor.printToFile("c_out"+File.separator+cFileNamePlusExtension);
 
 
             //ESECUZIONE DI GCC PER CREARE IL FILE OUTPUT.EXE A PARTIRE DAL FILE.C
             ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+".exe", cFileNamePlusExtension);
-            builder.directory(new File("test_files"+File.separator+"c_out"));
+            builder.directory(new File("c_out"));
             builder.redirectErrorStream(true);
             Process p = builder.start();
 
@@ -64,7 +64,7 @@ public class Toy2ToC {
             }
 
             //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
-            ProcessBuilder processBuilder = new ProcessBuilder("test_files"+File.separator+"c_out"+File.separator+cFileName+".exe");
+            ProcessBuilder processBuilder = new ProcessBuilder("c_out"+File.separator+cFileName+".exe");
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
