@@ -18,7 +18,7 @@ public class Toy2ToC {
     public static void main(String[] args) throws FileNotFoundException {
         try {
             Reader inFile = new FileReader(args[0]);
-
+//
             Lexer lexer = new Lexer(inFile);
 
             Parser par = new Parser(lexer);
