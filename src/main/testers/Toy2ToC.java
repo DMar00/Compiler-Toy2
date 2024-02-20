@@ -38,7 +38,8 @@ public class Toy2ToC {
                 /*SemanticVisitorSecondVisit*/ scopingVisitor2 = new SemanticVisitorSecondVisit(scopingVisitor.getActiveSymbolTable());
                 astRoot.accept(scopingVisitor2);
             }catch (RuntimeException e){
-                System.err.println(e);
+                //System.err.println(e);
+                e.printStackTrace();
             }finally {
                 //Visitor C
                 CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap(), scopingVisitor.getProcMap());
@@ -80,8 +81,8 @@ public class Toy2ToC {
             }*/
 
         } catch (Exception e) {
-            System.err.println(e);
-            //e.printStackTrace();
+            //System.err.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -89,7 +90,8 @@ public class Toy2ToC {
         try {
             main2(args);
         } catch(Exception e) {
-            System.err.println(e);
+            //System.err.println(e);
+            e.printStackTrace();
         }
     }
 }
