@@ -72,7 +72,7 @@ public class Toy2ToC {
                 }
             }
 
-            /*ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
+            /*//ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
             ProcessBuilder processBuilder = new ProcessBuilder("c_out"+File.separator+cFileName+".exe");
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -87,7 +87,7 @@ public class Toy2ToC {
             Path percorso = Paths.get(args[0]);
             String fileName = percorso.getFileName().toString();
             String cFileName = fileName.substring(0,fileName.length()-4) ;
-            String cFileNamePlusExtension = cFileName+"_out.txt";
+            String cFileNamePlusExtension = cFileName+"_out.c";
             String path = "test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension;
             // Crea un oggetto File
             File file = new File(path);
@@ -99,10 +99,14 @@ public class Toy2ToC {
             BufferedWriter writer = new BufferedWriter(fileWriter);
 
             // Scrive il testo dell'eccezione nel file
-            writer.write(e.getMessage());
+            writer.write(createFileException(e.getMessage()));
 
             // Chiude il writer
             writer.close();
         }
+    }
+
+    private static String createFileException(String message) {
+        return "#include <stdio.h>\n int main() {\n printf(\""+message+"\");\nreturn 0;\n}";
     }
 }
