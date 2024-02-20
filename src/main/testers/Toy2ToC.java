@@ -17,6 +17,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -24,35 +25,36 @@ import java.util.Map;
 import java.util.Scanner;
 
 public class Toy2ToC {
-    public static void main(String[] args) throws IOException, TransformerConfigurationException, ParserConfigurationException {
-        try {
-            Reader inFile = new FileReader(args[0]);
-            Lexer lexer = new Lexer(inFile);
+    public static void main(String[] args) throws Exception{
+        Reader inFile = new FileReader(args[0]);
+        Lexer lexer = new Lexer(inFile);
 
-            Parser par = new Parser(lexer);
-            ProgramOp astRoot = (ProgramOp) par.parse().value;
+        Parser par = new Parser(lexer);
+        ProgramOp astRoot = (ProgramOp) par.parse().value;
 
-
-            /*XMLVisitor xmlGen = new XMLVisitor();
+        /*XMLVisitor xmlGen = new XMLVisitor();
             astRoot.accept(xmlGen);*/
 
-            SemanticVisitorFirstVisit scopingVisitor = null;
-            SemanticVisitorSecondVisit scopingVisitor2 = null;
+        SemanticVisitorFirstVisit scopingVisitor = null;
+        SemanticVisitorSecondVisit scopingVisitor2 = null;
 
-            //1° visita
-            /*SemanticVisitorFirstVisit */
-            scopingVisitor = new SemanticVisitorFirstVisit();
-            astRoot.accept(scopingVisitor);
+        //1° visita
+        /*SemanticVisitorFirstVisit */
+        scopingVisitor = new SemanticVisitorFirstVisit();
+        astRoot.accept(scopingVisitor);
 
-            //2° visita
-            /*SemanticVisitorSecondVisit*/
-            scopingVisitor2 = new SemanticVisitorSecondVisit(scopingVisitor.getActiveSymbolTable());
-            astRoot.accept(scopingVisitor2);
+        //2° visita
+        /*SemanticVisitorSecondVisit*/
+        scopingVisitor2 = new SemanticVisitorSecondVisit(scopingVisitor.getActiveSymbolTable());
+        astRoot.accept(scopingVisitor2);
 
-            //Visitor C
-            CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap(), scopingVisitor.getProcMap());
-            astRoot.accept(cVisitor);
+        //Visitor C
+        CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap(), scopingVisitor.getProcMap());
+        astRoot.accept(cVisitor);
 
+
+
+        /*try {
             Path percorso = Paths.get(args[0]);
             String fileName = percorso.getFileName().toString();
             String cFileName = fileName.substring(0, fileName.length() - 4);
@@ -74,19 +76,47 @@ public class Toy2ToC {
                 }
             }
 
-            /*//ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
+            //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
             ProcessBuilder processBuilder = new ProcessBuilder("c_out"+File.separator+cFileName+".exe");
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
                 System.out.println(line); // Stampa l'output nel terminale
-            }*/
+            }
 
-        } catch (Exception e) {
+        } *//*catch (Exception e) {
             //System.err.println(e);
             //e.printStackTrace();
             e.getMessage();
+        }*/
+
+        Path percorso = Paths.get(args[0]);
+        String fileName = percorso.getFileName().toString();
+        String cFileName = fileName + ".c";
+        String c_out_dir = "test_files" + File.separator + "c_out";
+        Path cFilePath = Path.of(c_out_dir, cFileName);
+
+        try{
+            Files.createDirectories(Path.of(c_out_dir));
+            Files.writeString(cFilePath, cVisitor.getResultProgram());
+        }catch (IOException e){
+            e.printStackTrace();
         }
+
+        try{
+            String exeDir = "test_files" + File.separator + "c_exe";
+            Files.createDirectories(Path.of(exeDir));
+            String exeFileName =  fileName + "Exe";
+            Path exeFilePath = Path.of(exeDir, exeFileName);
+            String compileLine = "gcc "+cFilePath+" -o " + exeFilePath;
+            Process prc = Runtime.getRuntime().exec(compileLine);
+            int exitCode = prc.waitFor();
+        }catch(IOException | InterruptedException e){
+            e.getMessage();
+        }
+
+
+
     }
 }

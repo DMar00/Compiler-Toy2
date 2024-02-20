@@ -54,6 +54,10 @@ public class CVisitor implements Visitor{
         bwr.close();
     }
 
+    public StringBuffer getResultProgram() {
+        return resultProgram;
+    }
+
     //traduce tipi TOY2 in tipi C
     private String transformVariables(Type t, String name){
         switch (t){
