@@ -7,6 +7,15 @@ import main.syntaxtree.nodes.ProgramOp;
 import main.syntaxtree.visitor.CVisitor;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorFirstVisit;
 import main.syntaxtree.visitor.semanticVisitor.SemanticVisitorSecondVisit;
+import org.w3c.dom.Document;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,7 +24,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 public class Toy2ToC {
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException, TransformerConfigurationException, ParserConfigurationException {
         try {
             Reader inFile = new FileReader(args[0]);
             Lexer lexer = new Lexer(inFile);
@@ -45,12 +54,12 @@ public class Toy2ToC {
             Path percorso = Paths.get(args[0]);
             String fileName = percorso.getFileName().toString();
             String cFileName = fileName.substring(0,fileName.length()-4) ;
-            String cFileNamePlusExtension = cFileName+".c";
+            String cFileNamePlusExtension = cFileName+"_out.c";
             //System.out.println("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
             cVisitor.printToFile("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
 
             //ESECUZIONE DI GCC PER CREARE IL FILE OUTPUT.EXE A PARTIRE DAL FILE.C
-            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+".exe", cFileNamePlusExtension);
+            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+"_out.exe", cFileNamePlusExtension);
             builder.directory(new File("test_files"+File.separator+"c_out"));
             builder.redirectErrorStream(true);
             Process p = builder.start();
@@ -74,7 +83,26 @@ public class Toy2ToC {
 
         } catch (Exception e) {
             //System.err.println(e);
-            System.err.println(e.getMessage());
+            e.printStackTrace();
+            Path percorso = Paths.get(args[0]);
+            String fileName = percorso.getFileName().toString();
+            String cFileName = fileName.substring(0,fileName.length()-4) ;
+            String cFileNamePlusExtension = cFileName+"_out.txt";
+            String path = "test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension;
+            // Crea un oggetto File
+            File file = new File(path);
+
+            // Crea un oggetto FileWriter per scrivere nel file
+            FileWriter fileWriter = new FileWriter(file);
+
+            // Crea un oggetto BufferedWriter per scrivere in modo efficiente nel file
+            BufferedWriter writer = new BufferedWriter(fileWriter);
+
+            // Scrive il testo dell'eccezione nel file
+            writer.write(e.getMessage());
+
+            // Chiude il writer
+            writer.close();
         }
     }
 }
