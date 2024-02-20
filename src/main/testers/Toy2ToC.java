@@ -82,31 +82,9 @@ public class Toy2ToC {
             }*/
 
         } catch (Exception e) {
-            //System.err.println(e);
-            e.printStackTrace();
-            Path percorso = Paths.get(args[0]);
-            String fileName = percorso.getFileName().toString();
-            String cFileName = fileName.substring(0,fileName.length()-4) ;
-            String cFileNamePlusExtension = cFileName+"_out.c";
-            String path = "test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension;
-            // Crea un oggetto File
-            File file = new File(path);
-
-            // Crea un oggetto FileWriter per scrivere nel file
-            FileWriter fileWriter = new FileWriter(file);
-
-            // Crea un oggetto BufferedWriter per scrivere in modo efficiente nel file
-            BufferedWriter writer = new BufferedWriter(fileWriter);
-
-            // Scrive il testo dell'eccezione nel file
-            writer.write(createFileException(e.getMessage()));
-
-            // Chiude il writer
-            writer.close();
+            System.err.println(e.getMessage());
+            //e.printStackTrace();
         }
     }
 
-    private static String createFileException(String message) {
-        return "#include <stdio.h>\n int main() {\n printf(\""+message+"\");\nreturn 0;\n}";
-    }
 }
