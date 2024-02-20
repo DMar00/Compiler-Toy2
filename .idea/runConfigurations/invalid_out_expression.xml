@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="invalid_out_expression" type="Application" factoryName="Application" folderName="Tests">
+    <option name="MAIN_CLASS_NAME" value="main.testers.Toy2ToC" />
+    <module name="D-Alfonso-Orrigo_es5" />
+    <option name="PROGRAM_PARAMETERS" value="tests/invalid_out_expression/invalid_out_expression.txt" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

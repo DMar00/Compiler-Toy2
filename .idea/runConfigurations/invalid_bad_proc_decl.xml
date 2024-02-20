@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="CTester" type="Application" factoryName="Application">
+  <configuration default="false" name="invalid_bad_proc_decl" type="Application" factoryName="Application" folderName="Tests">
     <option name="MAIN_CLASS_NAME" value="main.testers.Toy2ToC" />
     <module name="D-Alfonso-Orrigo_es5" />
-    <option name="PROGRAM_PARAMETERS" value="tests/invalid_bad_funcall/invalid_bad_funcall.txt" />
+    <option name="PROGRAM_PARAMETERS" value="tests/invalid_bad_proc_decl/invalid_bad_proc_decl.txt" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

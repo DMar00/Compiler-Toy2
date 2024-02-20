@@ -30,15 +30,15 @@ char* floatToString(float num) {
 }
 int main(){
 	char * operazione  = (char *)malloc(256 * sizeof(char));
-	float  input2 ;
 	float  input1 ;
 	float  answer ;
+	float  input2 ;
 	int  flag = 1;
 	float  result ;
-	float  res2 ;
-	float  res4 ;
 	float  res1 ;
 	float  res3 ;
+	float  res4 ;
+	float  res2 ;
 while (flag==1) {
 printf("Inserisci l'operazione da effettuare (somma, sottrazione, divisione, moltiplicazione, tutte_le_operazioni): ");
 scanf("%s", operazione);
@@ -77,7 +77,7 @@ printf("Operazione non consentita\n");
 printf("Il risultato e': %f\n", result);
 
 } else{
-printf("%s\n", stampa(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat("i risultati delle 4 operazioni sono \n", floatToString(res1)), "\n"), floatToString(res2)), "\n"), floatToString(res3)), "\n"), floatToString(res3)), "\n")));
+printf("%s\n", stampa(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat(myStrcat("i risultati delle 4 operazioni sono \n", floatToString(res1)), "\n"), floatToString(res2)), "\n"), floatToString(res3)), "\n"), floatToString(res4)), "\n")));
 
 }printf("Vuoi continuare? (1 yes/0 no): ");
 scanf("%f", &answer);
@@ -113,8 +113,8 @@ result = 0.0;
 	return result;
 }
 void tutte_le_operazioni (float input1, float input2, float *p0, float *p1, float *p2, float *p3){
-	float  somma_res = 0.0;
 	float  sottrazione_res = 0.0;
+	float  somma_res = 0.0;
 	somma(input1, input2, &somma_res);
 	sottrazione(input1, input2, &sottrazione_res);
 	*p0 = somma_res;
