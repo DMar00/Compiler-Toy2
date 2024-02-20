@@ -80,7 +80,7 @@ public class Toy2ToC {
         try {
             main2(args);
         } catch(Throwable e) {
-            System.out.println(e);
+            System.err.println(e);
         }
     }
 }
