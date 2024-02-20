@@ -96,7 +96,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>src.Toy2ToC</mainClass>
+                    <mainClass>src.main.testers.Toy2ToC</mainClass>
                 </configuration>
             </plugin>
 
