@@ -99,7 +99,14 @@
                     <mainClass>src.Toy2ToC</mainClass>
                 </configuration>
             </plugin>
-
+            <!--prova-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-X</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
