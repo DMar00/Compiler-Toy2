@@ -74,7 +74,7 @@ public class Toy2ToC {
 
         } catch (Exception e) {
             //System.err.println(e);
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 }
