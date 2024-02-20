@@ -40,11 +40,13 @@ public class Toy2ToC {
             SemanticVisitorSecondVisit scopingVisitor2 = null;
 
             //1° visita
-            /*SemanticVisitorFirstVisit */scopingVisitor = new SemanticVisitorFirstVisit();
+            /*SemanticVisitorFirstVisit */
+            scopingVisitor = new SemanticVisitorFirstVisit();
             astRoot.accept(scopingVisitor);
 
             //2° visita
-            /*SemanticVisitorSecondVisit*/ scopingVisitor2 = new SemanticVisitorSecondVisit(scopingVisitor.getActiveSymbolTable());
+            /*SemanticVisitorSecondVisit*/
+            scopingVisitor2 = new SemanticVisitorSecondVisit(scopingVisitor.getActiveSymbolTable());
             astRoot.accept(scopingVisitor2);
 
             //Visitor C
@@ -53,14 +55,14 @@ public class Toy2ToC {
 
             Path percorso = Paths.get(args[0]);
             String fileName = percorso.getFileName().toString();
-            String cFileName = fileName.substring(0,fileName.length()-4) ;
-            String cFileNamePlusExtension = cFileName+"_out.c";
+            String cFileName = fileName.substring(0, fileName.length() - 4);
+            String cFileNamePlusExtension = cFileName + ".c";
             //System.out.println("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
-            cVisitor.printToFile("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
+            cVisitor.printToFile("test_files" + File.separator + "c_out" + File.separator + cFileNamePlusExtension);
 
             //ESECUZIONE DI GCC PER CREARE IL FILE OUTPUT.EXE A PARTIRE DAL FILE.C
-            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName+"_out.exe", cFileNamePlusExtension);
-            builder.directory(new File("test_files"+File.separator+"c_out"));
+            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName + ".exe", cFileNamePlusExtension);
+            builder.directory(new File("test_files" + File.separator + "c_out"));
             builder.redirectErrorStream(true);
             Process p = builder.start();
 
@@ -82,9 +84,8 @@ public class Toy2ToC {
             }*/
 
         } catch (Exception e) {
-            System.err.println(e.getMessage());
-            //e.printStackTrace();
+            //System.err.println(e);
+            e.printStackTrace();
         }
     }
-
 }
