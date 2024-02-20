@@ -93,7 +93,8 @@ public class Toy2ToC {
 
         Path percorso = Paths.get(args[0]);
         String fileName = percorso.getFileName().toString();
-        String cFileName = fileName + ".c";
+        String fileNameNoExt = fileName.substring(0, fileName.length() - 4);
+        String cFileName = fileNameNoExt + ".c";
         String c_out_dir = "test_files" + File.separator + "c_out";
         Path cFilePath = Path.of(c_out_dir, cFileName);
 
@@ -115,8 +116,6 @@ public class Toy2ToC {
         }catch(IOException | InterruptedException e){
             e.getMessage();
         }
-
-
 
     }
 }
