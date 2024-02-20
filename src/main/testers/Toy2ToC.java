@@ -15,10 +15,9 @@ import java.util.Map;
 import java.util.Scanner;
 
 public class Toy2ToC {
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main2(String[] args) throws FileNotFoundException {
         try {
             Reader inFile = new FileReader(args[0]);
-//
             Lexer lexer = new Lexer(inFile);
 
             Parser par = new Parser(lexer);
@@ -63,17 +62,25 @@ public class Toy2ToC {
                 }
             }
 
-            //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
+            /*//ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
             ProcessBuilder processBuilder = new ProcessBuilder("c_out"+File.separator+cFileName+".exe");
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
                 System.out.println(line); // Stampa l'output nel terminale
-            }
+            }*/
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws FileNotFoundException {
+        try {
+            main2(args);
+        } catch(Throwable e) {
+            System.out.println(e);
         }
     }
 }

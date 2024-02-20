@@ -48,8 +48,8 @@ int main(){
 	int  a = 1;
 	float  b = 2.2;
 	int  x = 3;
-	char * taglia  = (char *)malloc(256 * sizeof(char));
 	char * ans1  = (char *)malloc(256 * sizeof(char));
+	char * taglia  = (char *)malloc(256 * sizeof(char));
 	char * ans = (char *)malloc(256 * sizeof(char));
 strcpy(ans, "no");
 	float  risultato = 0.0;
