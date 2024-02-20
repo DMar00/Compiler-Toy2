@@ -470,9 +470,7 @@ public class SemanticVisitorSecondVisit extends SemanticVisitorAbstract implemen
                      */
                 }
             }else{
-                //TODO CAMBIA
-                throw new RuntimeException("Eccezione di prova lalala!");
-                //throw new MismatchedParameterCountCall(SymbolItemType.FUNCTION.toString(), funName, sizeParamFound, sizeParam);
+                throw new MismatchedParameterCountCall(SymbolItemType.FUNCTION.toString(), funName, sizeParamFound, sizeParam);
             }
         }else{
             throw new IdNotDeclared(SymbolItemType.FUNCTION.toString(), funName);
