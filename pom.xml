@@ -96,21 +96,9 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>src.main.testers.Toy2ToC</mainClass>
+                    <mainClass>main.testers.Toy2ToC</mainClass>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0</version> <!-- Aggiorna alla versione più recente -->
-                <configuration>
-                    <systemPropertyVariables>
-                        <logErrorStackTrace>true</logErrorStackTrace>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-
         </plugins>
     </build>
 

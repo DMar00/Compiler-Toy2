@@ -114,7 +114,8 @@ public class Toy2ToC {
             Process prc = Runtime.getRuntime().exec(compileLine);
             int exitCode = prc.waitFor();
         }catch(IOException | InterruptedException e){
-            e.getMessage();
+            //e.getMessage();
+            System.err.println(e.getMessage());
         }
 
     }
