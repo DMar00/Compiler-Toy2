@@ -52,45 +52,6 @@ public class Toy2ToC {
         CVisitor cVisitor = new CVisitor(scopingVisitor.getFuncMap(), scopingVisitor.getProcMap());
         astRoot.accept(cVisitor);
 
-
-
-        /*try {
-            Path percorso = Paths.get(args[0]);
-            String fileName = percorso.getFileName().toString();
-            String cFileName = fileName.substring(0, fileName.length() - 4);
-            String cFileNamePlusExtension = cFileName + ".c";
-            //System.out.println("test_files"+File.separator+"c_out"+File.separator+cFileNamePlusExtension);
-            cVisitor.printToFile("test_files" + File.separator + "c_out" + File.separator + cFileNamePlusExtension);
-
-            //ESECUZIONE DI GCC PER CREARE IL FILE OUTPUT.EXE A PARTIRE DAL FILE.C
-            ProcessBuilder builder = new ProcessBuilder("gcc", "-o", cFileName + ".exe", cFileNamePlusExtension);
-            builder.directory(new File("test_files" + File.separator + "c_out"));
-            builder.redirectErrorStream(true);
-            Process p = builder.start();
-
-            Scanner sc = new Scanner(p.getInputStream());
-            if (sc.hasNextLine()) {
-                while (sc.hasNextLine()) {
-                    String line = sc.nextLine();
-                    System.out.println(line);
-                }
-            }
-
-            //ESECUZIONE E STAMPA DEL FILE OUTPUT.EXE
-            ProcessBuilder processBuilder = new ProcessBuilder("c_out"+File.separator+cFileName+".exe");
-            Process process = processBuilder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line); // Stampa l'output nel terminale
-            }
-
-        } *//*catch (Exception e) {
-            //System.err.println(e);
-            //e.printStackTrace();
-            e.getMessage();
-        }*/
-
         Path percorso = Paths.get(args[0]);
         String fileName = percorso.getFileName().toString();
         String fileNameNoExt = fileName.substring(0, fileName.length() - 4);
