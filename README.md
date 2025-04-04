@@ -3,7 +3,6 @@
 This project is a **compiler for a custom programming language called _Toy2_**.  
 
 ## ✨ Language Features
-- **Strong static typing**
 - **Variable declarations**, with or without initialization
 - **Functions with multiple return values**, using a comma-separated list
 - **Procedures** supporting:
