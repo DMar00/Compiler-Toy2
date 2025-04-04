@@ -29,3 +29,10 @@ This project is a **compiler for a custom programming language called _Toy2_**.
 The full lexical and syntactic specification of the Toy2 language can be found in the  
 `Documentation` folder.
 
+## ⚙️ Technologies Used
+The compiler was built using the following tools and technologies:
+- **Java**
+- **JFlex** — for lexical analysis (token generation)
+- **CUP** (Constructor of Useful Parsers) — for parsing and syntax analysis
+- **C** — used as the target language for intermediate code generation.
+
